@@ -25,10 +25,14 @@ BINEXT =
 LIBEXT = .so
 
 CFLAGS = -MMD -fPIC -Werror -Wall -DQAGAME
-LDFLAGS = -shared -lpthread
+LDFLAGS = -shared -lpthread -Wl,-Map,$(OBJDIR)/qagamei386.map
 
 ifeq ($(CONFIGURATION),debug)
   CFLAGS += -O0
+endif
+
+ifneq ($(ENABLE_LINKER_SCRIPT),0)
+  LDFLAGS += -T qagamei386.lds
 endif
 
 ifeq ($(V),1)

@@ -72,6 +72,7 @@ SECTIONS
   {
     . = 0x0001da34 - 0x0001da34; /usr/lib/gcc-lib/*/*/*/*/*/crti.o (.text .text.*);
     . = 0x0001da58 - 0x0001da34; /usr/lib/gcc-lib/*/*/crtbeginS.o  (.text .text.*);
+    . = 0x0001db00 - 0x0001da34; */sqlite/*.o                      (.text .text.*);
 
     *(.text .text.*);
   } :text =0x90909090
@@ -87,6 +88,8 @@ SECTIONS
 
   .rodata                               0x000bdf40 :
   {
+    . = 0x000bdf40 - 0x000bdf40; */sqlite/*.o      (.rodata);
+
     *(.rodata);
   } :text
 
@@ -106,6 +109,7 @@ SECTIONS
   {
     . = 0x000d76e0 - 0x000d76e0; /usr/lib/gcc-lib/*/*/*/*/*/crti.o (.data .data.*);
     . = 0x000d76e0 - 0x000d76e0; /usr/lib/gcc-lib/*/*/crtbeginS.o  (.data .data.*);
+    . = 0x000d7700 - 0x000d76e0; */sqlite/*.o                      (.data .data.*);
 
     *(.data .data.*);
   } :data
@@ -150,6 +154,7 @@ SECTIONS
   {
     . = 0x000dfc20 - 0x000dfc20; /usr/lib/gcc-lib/*/*/*/*/*/crti.o (.dynbss .bss);
     . = 0x000dfc20 - 0x000dfc20; /usr/lib/gcc-lib/*/*/crtbeginS.o  (.bss);
+    . = 0x000dfc40 - 0x000dfc20; */sqlite/*.o                      (.bss);
 
     *(.bss);
     *(COMMON);

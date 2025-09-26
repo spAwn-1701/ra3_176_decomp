@@ -53,9 +53,9 @@ void G_ReadSessionData( gclient_t *client ) {
 	trap_Cvar_VariableStringBuffer( var, s, sizeof(s) );
 
 	sscanf( s, "%i %i %i %i %i %i", 
-		&client->sess.sessionTeam,
+		(int *)&client->sess.sessionTeam,
 		&client->sess.spectatorTime,
-		&client->sess.spectatorState,
+		(int *)&client->sess.spectatorState,
 		&client->sess.spectatorClient,
 		&client->sess.wins,
 		&client->sess.losses

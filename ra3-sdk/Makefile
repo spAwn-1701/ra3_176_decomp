@@ -60,9 +60,6 @@ QAGAME_SRC = \
   $(SRCDIR)/game/ai_dmq3.c \
   $(SRCDIR)/game/ai_main.c \
   $(SRCDIR)/game/ai_team.c \
-  $(SRCDIR)/game/arena.c \
-  $(SRCDIR)/game/arenacfg.c \
-  $(SRCDIR)/game/arena_common.c \
   $(SRCDIR)/game/bg_lib.c \
   $(SRCDIR)/game/bg_misc.c \
   $(SRCDIR)/game/bg_pmove.c \
@@ -70,12 +67,9 @@ QAGAME_SRC = \
   $(SRCDIR)/game/g_active.c \
   $(SRCDIR)/game/g_arenas.c \
   $(SRCDIR)/game/g_bot.c \
-  $(SRCDIR)/game/g_captain.c \
   $(SRCDIR)/game/g_client.c \
   $(SRCDIR)/game/g_cmds.c \
   $(SRCDIR)/game/g_combat.c \
-  $(SRCDIR)/game/g_db.c \
-  $(SRCDIR)/game/g_httpd.c \
   $(SRCDIR)/game/g_items.c \
   $(SRCDIR)/game/g_main.c \
   $(SRCDIR)/game/g_mem.c \
@@ -84,14 +78,11 @@ QAGAME_SRC = \
   $(SRCDIR)/game/g_mover.c \
   $(SRCDIR)/game/g_session.c \
   $(SRCDIR)/game/g_spawn.c \
-  $(SRCDIR)/game/g_stats.c \
   $(SRCDIR)/game/g_svcmds.c \
   $(SRCDIR)/game/g_syscalls.c \
   $(SRCDIR)/game/g_target.c \
   $(SRCDIR)/game/g_team.c \
-  $(SRCDIR)/game/g_thread.c \
   $(SRCDIR)/game/g_trigger.c \
-  $(SRCDIR)/game/g_unlagged.c \
   $(SRCDIR)/game/g_utils.c \
   $(SRCDIR)/game/g_weapon.c \
   $(SRCDIR)/game/q_math.c \

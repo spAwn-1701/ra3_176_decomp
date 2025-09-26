@@ -629,6 +629,8 @@ void ClientUserinfoChanged( int clientNum ) {
 	case TEAM_BLUE:
 		ForceClientSkin(client, model, "blue");
 		break;
+	default:
+		break;
 	}
 	if ( g_gametype.integer >= GT_TEAM && client->sess.sessionTeam == TEAM_SPECTATOR ) {
 		// don't ever use a default skin in teamplay, it would just waste memory

@@ -739,7 +739,7 @@ TeamPlayIsOn
 ==================
 */
 int TeamPlayIsOn(void) {
-	return ( gametype == GT_TEAM || gametype == GT_CTF );
+	return ( gametype == GT_TEAM || gametype == GT_CTF || gametype == GT_MAX_GAME_TYPE );
 }
 
 /*

@@ -79,6 +79,7 @@ SECTIONS
     . = 0x000651cc - 0x0001da34; */game/ai_dmnet.o                 (.text .text.*);
     . = 0x0006ac10 - 0x0001da34; */game/ai_dmq3.o                  (.text .text.*);
     . = 0x00072654 - 0x0001da34; */game/ai_main.o                  (.text .text.*);
+    . = 0x00075de4 - 0x0001da34; */game/ai_team.o                  (.text .text.*);
 
     *(.text .text.*);
   } :text =0x90909090
@@ -101,6 +102,7 @@ SECTIONS
     . = 0x000cb200 - 0x000bdf40; */game/ai_dmnet.o (.rodata);
     . = 0x000cb620 - 0x000bdf40; */game/ai_dmq3.o  (.rodata);
     . = 0x000cbe20 - 0x000bdf40; */game/ai_main.o  (.rodata);
+    . = 0x000cc3d0 - 0x000bdf40; */game/ai_team.o  (.rodata);
 
     *(.rodata);
   } :text
@@ -128,6 +130,7 @@ SECTIONS
     . = 0x000db14c - 0x000d76e0; */game/ai_dmnet.o                 (.data .data.*);
     . = 0x000db15c - 0x000d76e0; */game/ai_dmq3.o                  (.data .data.*);
     . = 0x000db19c - 0x000d76e0; */game/ai_main.o                  (.data .data.*);
+    . = 0x000db1b0 - 0x000d76e0; */game/ai_team.o                  (.data .data.*);
 
     *(.data .data.*);
   } :data
@@ -179,6 +182,7 @@ SECTIONS
     . = 0x000e2d2c - 0x000dfc20; */game/ai_dmnet.o                 (.bss);
     . = 0x000e2d2c - 0x000dfc20; */game/ai_dmq3.o                  (.bss);
     . = 0x000e2d30 - 0x000dfc20; */game/ai_main.o                  (.bss);
+    . = 0x000e2d3c - 0x000dfc20; */game/ai_team.o                  (.bss);
 
     *(.bss);
     *(COMMON);

@@ -75,6 +75,7 @@ SECTIONS
     . = 0x0001db00 - 0x0001da34; */sqlite/*.o                      (.text .text.*);
     . = 0x0005b22c - 0x0001da34; */httpd/*.o                       (.text .text.*);
     . = 0x0005e950 - 0x0001da34; */game/ai_chat.o                  (.text .text.*);
+    . = 0x00061fa8 - 0x0001da34; */game/ai_cmd.o                   (.text .text.*);
 
     *(.text .text.*);
   } :text =0x90909090
@@ -93,6 +94,7 @@ SECTIONS
     . = 0x000bdf40 - 0x000bdf40; */sqlite/*.o      (.rodata);
     . = 0x000ca0e0 - 0x000bdf40; */httpd/*.o       (.rodata);
     . = 0x000ca5d8 - 0x000bdf40; */game/ai_chat.o  (.rodata);
+    . = 0x000ca980 - 0x000bdf40; */game/ai_cmd.o   (.rodata);
 
     *(.rodata);
   } :text
@@ -116,6 +118,7 @@ SECTIONS
     . = 0x000d7700 - 0x000d76e0; */sqlite/*.o                      (.data .data.*);
     . = 0x000db020 - 0x000d76e0; */httpd/*.o                       (.data .data.*);
     . = 0x000db0e4 - 0x000d76e0; */game/ai_chat.o                  (.data .data.*);
+    . = 0x000db0f4 - 0x000d76e0; */game/ai_cmd.o                   (.data .data.*);
 
     *(.data .data.*);
   } :data
@@ -163,6 +166,7 @@ SECTIONS
     . = 0x000dfc40 - 0x000dfc20; */sqlite/*.o                      (.bss);
     . = 0x000e01e0 - 0x000dfc20; */httpd/*.o                       (.bss);
     . = 0x000e2be0 - 0x000dfc20; */game/ai_chat.o                  (.bss);
+    . = 0x000e2d20 - 0x000dfc20; */game/ai_cmd.o                   (.bss);
 
     *(.bss);
     *(COMMON);

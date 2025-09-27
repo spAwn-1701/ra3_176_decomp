@@ -1064,3 +1064,24 @@ void	trap_BotFreeWeaponState(int weaponstate);
 void	trap_BotResetWeaponState(int weaponstate);
 
 int		trap_GeneticParentsAndChildSelection(int numranks, float *ranks, int *parent1, int *parent2, int *child);
+
+//============================================================================
+
+#ifndef Q3_VM
+
+enum {
+	TBL_BANS,
+	TBL_VOTES,
+	TBL_PLAYERS,
+	TBL_SESSIONS,
+	NUM_TABLES,
+};
+
+static char *tblNames[NUM_TABLES] __attribute__((unused)) = {
+	"IPBans",
+	"Callvotes",
+	"Players",
+	"Sessions",
+};
+
+#endif

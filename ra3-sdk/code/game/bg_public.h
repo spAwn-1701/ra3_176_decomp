@@ -36,28 +36,32 @@
 //
 
 // CS_SERVERINFO and CS_SYSTEMINFO are defined in q_shared.h
-#define	CS_MUSIC			2
-#define	CS_MESSAGE			3		// from the map worldspawn's message field
-#define	CS_MOTD				4		// g_motd string for server message of the day
-#define	CS_WARMUP			5		// server time when the match will be restarted
-#define	CS_SCORES1			6
-#define	CS_SCORES2			7
-#define CS_VOTE_TIME		8
-#define CS_VOTE_STRING		9
-#define	CS_VOTE_YES			10
-#define	CS_VOTE_NO			11
-#define	CS_GAME_VERSION		12
-#define	CS_LEVEL_START_TIME	13		// so the timer only shows the current level
-#define	CS_INTERMISSION		14		// when 1, fraglimit/timelimit has been hit and intermission will start in a second or two
-#define CS_FLAGSTATUS		15		// string indicating flag status in CTF
-#define	CS_ITEMS			27		// string of 0's and 1's that tell which items are present
+#define	CS_MUSIC				2
+#define	CS_MESSAGE				3		// from the map worldspawn's message field
+#define	CS_MOTD					4		// g_motd string for server message of the day
+#define	CS_WARMUP				5		// server time when the match will be restarted
+#define	CS_SCORES1				6
+#define	CS_SCORES2				7
+#define CS_VOTE_TIME			8
+#define CS_VOTE_STRING			9
+#define	CS_VOTE_YES				10
+#define	CS_VOTE_NO				11
+#define	CS_GAME_VERSION			12
+#define	CS_LEVEL_START_TIME		13		// so the timer only shows the current level
+#define	CS_INTERMISSION			14		// when 1, fraglimit/timelimit has been hit and intermission will start in a second or two
+#define CS_FLAGSTATUS			15		// string indicating flag status in CTF
+#define	CS_ITEMS				27		// string of 0's and 1's that tell which items are present
 
-#define	CS_MODELS			32
-#define	CS_SOUNDS			(CS_MODELS+MAX_MODELS)
-#define	CS_PLAYERS			(CS_SOUNDS+MAX_SOUNDS)
-#define CS_LOCATIONS		(CS_PLAYERS+MAX_CLIENTS)
+#define	CS_MODELS				32
+#define	CS_SOUNDS				(CS_MODELS+MAX_MODELS)
+#define	CS_PLAYERS				(CS_SOUNDS+MAX_SOUNDS)
+#define CS_LOCATIONS			(CS_PLAYERS+MAX_CLIENTS)
+#define CS_ARENAS				(CS_LOCATIONS+MAX_LOCATIONS)
+#define CS_TEAMS				(CS_ARENAS+MAX_ARENAS)
+#define CS_ARENA_VERSION		(CS_TEAMS+MAX_TEAMS)
+#define CS_COMPMODE_BLACKOUT	(CS_ARENA_VERSION+1)
 
-#define CS_MAX				(CS_LOCATIONS+MAX_LOCATIONS)
+#define CS_MAX					(CS_TEAMS+MAX_TEAMS)
 
 #if (CS_MAX) > MAX_CONFIGSTRINGS
 #error overflow: (CS_MAX) > MAX_CONFIGSTRINGS
@@ -72,7 +76,9 @@ typedef enum {
 
 	GT_TEAM,			// team deathmatch
 	GT_CTF,				// capture the flag
-
+	GT_1FCTF,
+	GT_OBELISK,
+	GT_HARVESTER,
 	GT_MAX_GAME_TYPE
 } gametype_t;
 
@@ -95,7 +101,8 @@ typedef enum {
 	PM_SPECTATOR,	// still run into walls
 	PM_DEAD,		// no acceleration or turning, but free falling
 	PM_FREEZE,		// stuck in place with no control
-	PM_INTERMISSION	// no movement or status bar
+	PM_INTERMISSION,	// no movement or status bar
+	PM_SPINTERMISSION	// no movement or status bar
 } pmtype_t;
 
 typedef enum {
@@ -118,6 +125,8 @@ typedef enum {
 #define PMF_GRAPPLE_PULL	2048	// pull towards grapple location
 #define PMF_FOLLOW			4096	// spectate following another player
 #define PMF_SCOREBOARD		8192	// spectate as a scoreboard
+#define PMF_INVULEXPAND		16384	// invulnerability sphere set to full size
+#define PMF_UNKNOWN			32768
 
 #define	PMF_ALL_TIMES	(PMF_TIME_WATERJUMP|PMF_TIME_LAND|PMF_TIME_KNOCKBACK)
 
@@ -133,6 +142,8 @@ typedef struct {
 	qboolean	noFootsteps;		// if the game is setup for no footsteps by the server
 	qboolean	gauntletHit;		// true if a gauntlet attack would actually hit something
 
+	int			framecount;
+
 	// results (out)
 	int			numtouch;
 	int			touchents[MAXTOUCH];
@@ -143,6 +154,10 @@ typedef struct {
 	int			waterlevel;
 
 	float		xyspeed;
+
+	// for fixed msec Pmove
+	int			pmove_fixed;
+	int			pmove_msec;
 
 	// callbacks to test the world
 	// these will be different functions during game and cgame
@@ -165,7 +180,9 @@ typedef enum {
 	STAT_ARMOR,				
 	STAT_DEAD_YAW,					// look this direction when dead (FIXME: get rid of?)
 	STAT_CLIENTS_READY,				// bit mask of clients wishing to exit the intermission (FIXME: configstring?)
-	STAT_MAX_HEALTH					// health / armor limit, changable by handicap
+	STAT_MAX_HEALTH,				// health / armor limit, changable by handicap
+	STAT_SPECTATOR,
+	STAT_UNKNOWN8
 } statIndex_t;
 
 
@@ -178,16 +195,17 @@ typedef enum {
 	PERS_RANK,				
 	PERS_TEAM,				
 	PERS_SPAWN_COUNT,				// incremented every respawn
-	PERS_REWARD_COUNT,				// incremented for each reward sound
-	PERS_REWARD,					// a reward_t
+	PERS_PLAYEREVENTS,				// 16 bits that can be flipped for events
 	PERS_ATTACKER,					// clientnum of last damage inflicter
+	PERS_ATTACKEE_ARMOR,			// health/armor of last person we attacked
 	PERS_KILLED,					// count of the number of times you died
 	// these were added for single player awards tracking
 	PERS_IMPRESSIVE_COUNT,
 	PERS_EXCELLENT_COUNT,
+	PERS_ACCURACY_COUNT,
+	PERS_HOLYSHIT_COUNT,
 	PERS_GAUNTLET_FRAG_COUNT,
-	PERS_ACCURACY_SHOTS,
-	PERS_ACCURACY_HITS
+	PERS_ARENA
 } persEnum_t;
 
 
@@ -195,16 +213,22 @@ typedef enum {
 #define	EF_DEAD				0x00000001		// don't draw a foe marker over players with EF_DEAD
 #define	EF_TELEPORT_BIT		0x00000004		// toggled every time the origin abruptly changes
 #define	EF_AWARD_EXCELLENT	0x00000008		// draw an excellent sprite
+#define	EF_PLAYER_EVENT		0x00000010
 #define	EF_BOUNCE			0x00000010		// for missiles
 #define	EF_BOUNCE_HALF		0x00000020		// for missiles
 #define	EF_AWARD_GAUNTLET	0x00000040		// draw a gauntlet sprite
 #define	EF_NODRAW			0x00000080		// may have an event, but no model (unspawned items)
 #define	EF_FIRING			0x00000100		// for lightning gun
 #define	EF_MOVER_STOP		0x00000400		// will push otherwise
+#define	EF_AWARD_CAP		0x00000800		// draw the capture sprite
 #define	EF_TALK				0x00001000		// draw a talk balloon
 #define	EF_CONNECTION		0x00002000		// draw a connection trouble sprite
 #define	EF_VOTED			0x00004000		// already cast a vote
 #define	EF_AWARD_IMPRESSIVE	0x00008000		// draw an impressive sprite
+#define	EF_AWARD_ACCURACY	0x00010000
+#define	EF_AWARD_HOLYSHIT	0x00020000
+#define	EF_AWARD_DENIED		0x00040000		// denied
+#define	EF_TEAMVOTED		0x00080000		// already cast a team vote
 
 typedef enum {
 	PW_NONE,
@@ -218,7 +242,13 @@ typedef enum {
 
 	PW_REDFLAG,
 	PW_BLUEFLAG,
-	PW_BALL,
+	PW_NEUTRALFLAG,
+
+	PW_SCOUT,
+	PW_GUARD,
+	PW_DOUBLER,
+	PW_AMMOREGEN,
+	PW_INVULNERABILITY,
 
 	PW_NUM_POWERUPS
 } powerup_t;
@@ -249,17 +279,10 @@ typedef enum {
 	WP_NUM_WEAPONS
 } weapon_t;
 
-
-// reward sounds
-typedef enum {
-	REWARD_BAD,
-
-	REWARD_IMPRESSIVE,
-	REWARD_EXCELLENT,
-	REWARD_DENIED,
-	REWARD_GAUNTLET
-} reward_t;
-
+// reward sounds (stored in ps->persistant[PERS_PLAYEREVENTS])
+#define	PLAYEREVENT_DENIEDREWARD		0x0001
+#define	PLAYEREVENT_GAUNTLETREWARD		0x0002
+#define PLAYEREVENT_HOLYSHIT			0x0004
 
 // entityState_t->event values
 // entity events are for effects that take place reletive
@@ -333,12 +356,14 @@ typedef enum {
 
 	EV_GENERAL_SOUND,
 	EV_GLOBAL_SOUND,		// no attenuation
+	EV_GLOBAL_TEAM_SOUND,
 
 	EV_BULLET_HIT_FLESH,
 	EV_BULLET_HIT_WALL,
 
 	EV_MISSILE_HIT,
 	EV_MISSILE_MISS,
+	EV_MISSILE_MISS_METAL,
 	EV_RAILTRAIL,
 	EV_SHOTGUN,
 	EV_BULLET,				// otherEntity is the shooter
@@ -354,10 +379,31 @@ typedef enum {
 	EV_POWERUP_REGEN,
 
 	EV_GIB_PLAYER,			// gib a previously living player
+	EV_SCOREPLUM,			// score plum
+
+//#ifdef MISSIONPACK
+	EV_PROXIMITY_MINE_STICK,
+	EV_PROXIMITY_MINE_TRIGGER,
+	EV_KAMIKAZE,			// kamikaze explodes
+	EV_OBELISKEXPLODE,		// obelisk explodes
+	EV_OBELISKPAIN,			// obelisk is in pain
+	EV_INVUL_IMPACT,		// invulnerability sphere impact
+
+	EV_JUICED,				// invulnerability juiced effect
+	EV_LIGHTNINGBOLT,		// lightning bolt bounced of invulnerability sphere
+//#endif
 
 	EV_DEBUG_LINE,
-	EV_TAUNT
+	EV_STOPLOOPINGSOUND,
+	EV_TAUNT,
+	EV_TAUNT_YES,
+	EV_TAUNT_NO,
+	EV_TAUNT_FOLLOWME,
+	EV_TAUNT_GETFLAG,
+	EV_TAUNT_GUARDBASE,
+	EV_TAUNT_PATROL,
 
+	EV_FLAWLESS
 } entity_event_t;
 
 
@@ -398,7 +444,23 @@ typedef enum {
 
 	LEGS_TURN,
 
-	MAX_ANIMATIONS
+	TORSO_GETFLAG,
+	TORSO_GUARDBASE,
+	TORSO_PATROL,
+	TORSO_FOLLOWME,
+	TORSO_AFFIRMATIVE,
+	TORSO_NEGATIVE,
+
+	MAX_ANIMATIONS,
+
+	LEGS_BACKCR,
+
+	LEGS_BACKWALK,
+	FLAG_RUN,
+	FLAG_STAND,
+	FLAG_STAND2RUN,
+
+	MAX_TOTALANIMATIONS
 } animNumber_t;
 
 
@@ -417,12 +479,12 @@ typedef struct animation_s {
 
 
 typedef enum {
-	TEAM_FREE,
+	TEAM_SPECTATOR = 0,
+	TEAM_FREE = 0,
 	TEAM_RED,
 	TEAM_BLUE,
-	TEAM_SPECTATOR,
 
-	TEAM_NUM_TEAMS
+	TEAM_NUM_TEAMS = 4
 } team_t;
 
 // Time between location updates
@@ -473,6 +535,7 @@ typedef enum {
 							// EFX: rotate + external ring that rotates
 	IT_HOLDABLE,			// single use, holdable item
 							// EFX: rotate + bob
+	IT_PERSISTANT_POWERUP,
 	IT_TEAM
 } itemType_t;
 
@@ -539,6 +602,7 @@ typedef enum {
 	ET_TELEPORT_TRIGGER,
 	ET_INVISIBLE,
 	ET_GRAPPLE,				// grapple hooked on wall
+	ET_TEAM,
 
 	ET_EVENTS				// any of the EV_* events can be added freestanding
 							// by setting eType to ET_EVENTS + eventNum
@@ -557,9 +621,9 @@ void	BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean 
 qboolean	BG_PlayerTouchesItem( playerState_t *ps, entityState_t *item, int atTime );
 
 
-#define ARENAS_PER_TIER		4
-#define MAX_ARENAS			1024
-#define	MAX_ARENAS_TEXT		8192
+#define BOT_ARENAS_PER_TIER	4
+#define MAX_BOT_ARENAS		1024
+#define	MAX_BOT_ARENAS_TEXT	8192
 
 #define MAX_BOTS			1024
 #define MAX_BOTS_TEXT		8192

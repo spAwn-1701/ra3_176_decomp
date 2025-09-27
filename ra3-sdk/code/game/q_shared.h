@@ -210,7 +210,7 @@ typedef int		clipHandle_t;
 // the game guarantees that no string from the network will ever
 // exceed MAX_STRING_CHARS
 #define	MAX_STRING_CHARS	1024	// max length of a string passed to Cmd_TokenizeString
-#define	MAX_STRING_TOKENS	256		// max tokens resulting from Cmd_TokenizeString
+#define	MAX_STRING_TOKENS	1024		// max tokens resulting from Cmd_TokenizeString
 #define	MAX_TOKEN_CHARS		1024	// max length of an individual token
 
 #define	MAX_INFO_STRING		1024
@@ -223,7 +223,11 @@ typedef int		clipHandle_t;
 
 
 #define	MAX_QPATH			64		// max length of a quake game pathname
+#ifdef PATH_MAX
+#define MAX_OSPATH			PATH_MAX
+#else
 #define	MAX_OSPATH			128		// max length of a filesystem pathname
+#endif
 
 #define	MAX_NAME_LENGTH		32		// max length of a client name
 
@@ -750,7 +754,9 @@ typedef enum {
 //
 // per-level limits
 //
-#define	MAX_CLIENTS			128		// absolute limit
+#define MAX_ARENAS			32
+#define MAX_TEAMS			64
+#define MAX_CLIENTS			64
 #define MAX_LOCATIONS		64
 
 #define	GENTITYNUM_BITS		10		// don't need to send any more
@@ -793,6 +799,8 @@ typedef struct {
 #define	MAX_WEAPONS				16		
 
 #define	MAX_PS_EVENTS			2
+
+#define	PS_PMOVEFRAMECOUNTBITS	6
 
 // playerState_t is the information needed by both the client and server
 // to predict player motion and actions
@@ -862,8 +870,15 @@ typedef struct playerState_s {
 	int			powerups[MAX_POWERUPS];	// level.time that the powerup runs out
 	int			ammo[MAX_WEAPONS];
 
+	int			generic1;
+	int			loopSound;
+	int			jumppad_ent;	// jumppad entity hit this frame
+
 	// not communicated over the net at all
 	int			ping;			// server to game info for scoreboard
+	int			pmove_framecount;	// FIXME: don't transmit over the network
+	int			jumppad_frame;
+	int			entityEventSequence;
 
 #ifdef MISSION_PACK
 	int		generic1;
@@ -896,10 +911,10 @@ typedef struct playerState_s {
 
 // usercmd_t is sent to the server each client frame
 typedef struct usercmd_s {
-	int		serverTime;
-	byte	buttons;
-	byte	weapon;
-	int		angles[3];
+	int				serverTime;
+	int				angles[3];
+	int 			buttons;
+	byte			weapon;           // weapon
 	signed char	forwardmove, rightmove, upmove;
 } usercmd_t;
 
@@ -972,6 +987,8 @@ typedef struct entityState_s {
 	int		weapon;			// determines weapon and flash model, etc
 	int		legsAnim;		// mask off ANIM_TOGGLEBIT
 	int		torsoAnim;		// mask off ANIM_TOGGLEBIT
+
+	int		generic1;
 
 #ifdef MISSION_PACK
 	int		generic1;

@@ -91,8 +91,7 @@ int Pickup_Powerup( gentity_t *ent, gentity_t *other ) {
 		}
 
 		// anti-reward
-		client->ps.persistant[PERS_REWARD_COUNT]++;
-		client->ps.persistant[PERS_REWARD] = REWARD_DENIED;
+		client->ps.persistant[PERS_PLAYEREVENTS] ^= PLAYEREVENT_DENIEDREWARD;
 	}
 
 	return RESPAWN_POWERUP;

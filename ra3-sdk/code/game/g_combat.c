@@ -242,24 +242,16 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 
 			if( meansOfDeath == MOD_GAUNTLET ) {
 				attacker->client->ps.persistant[PERS_GAUNTLET_FRAG_COUNT]++;
-				attacker->client->ps.persistant[PERS_REWARD] = REWARD_GAUNTLET;
-				attacker->client->ps.persistant[PERS_REWARD_COUNT]++;
 
 				// add the sprite over the player's head
 				attacker->client->ps.eFlags &= ~(EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET );
 				attacker->client->ps.eFlags |= EF_AWARD_GAUNTLET;
 				attacker->client->rewardTime = level.time + REWARD_SPRITE_TIME;
-
-				// also play humiliation on target
-				self->client->ps.persistant[PERS_REWARD] = REWARD_GAUNTLET;
-				self->client->ps.persistant[PERS_REWARD_COUNT]++;
 			}
 
 			// check for two kills in a short amount of time
 			// if this is close enough to the last kill, give a reward sound
 			if ( level.time - attacker->client->lastKillTime < CARNAGE_REWARD_TIME ) {
-				attacker->client->ps.persistant[PERS_REWARD_COUNT]++;
-				attacker->client->ps.persistant[PERS_REWARD] = REWARD_EXCELLENT;
 				attacker->client->ps.persistant[PERS_EXCELLENT_COUNT]++;
 
 				// add the sprite over the player's head

@@ -554,38 +554,7 @@ Cmd_Team_f
 =================
 */
 void Cmd_Team_f( gentity_t *ent ) {
-	int			oldTeam;
-	char		s[MAX_TOKEN_CHARS];
-
-	if ( trap_Argc() != 2 ) {
-		oldTeam = ent->client->sess.sessionTeam;
-		switch ( oldTeam ) {
-		case TEAM_BLUE:
-			trap_SendServerCommand( ent-g_entities, "print \"Blue team\n\"" );
-			break;
-		case TEAM_RED:
-			trap_SendServerCommand( ent-g_entities, "print \"Red team\n\"" );
-			break;
-		case TEAM_FREE:
-			trap_SendServerCommand( ent-g_entities, "print \"Free team\n\"" );
-			break;
-		case TEAM_SPECTATOR:
-			trap_SendServerCommand( ent-g_entities, "print \"Spectator team\n\"" );
-			break;
-		}
-		return;
-	}
-
-	// if they are playing a tournement game, count as a loss
-	if ( g_gametype.integer == GT_TOURNAMENT && ent->client->sess.sessionTeam == TEAM_FREE ) {
-		ent->client->sess.losses++;
-	}
-
-	trap_Argv( 1, s, sizeof( s ) );
-
-	SetTeam( ent, s );
 }
-
 
 /*
 =================

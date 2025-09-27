@@ -10,7 +10,7 @@ static char		*g_botInfos[MAX_BOTS];
 
 
 int				g_numArenas;
-static char		*g_arenaInfos[MAX_ARENAS];
+static char		*g_arenaInfos[MAX_BOT_ARENAS];
 
 
 #define BOT_BEGIN_DELAY_BASE		2000
@@ -80,7 +80,7 @@ int G_ParseInfos( char *buf, int max, char *infos[] ) {
 			Info_SetValueForKey( info, key, token );
 		}
 		//NOTE: extra space for arena number
-		infos[count] = G_Alloc(strlen(info) + strlen("\\num\\") + strlen(va("%d", MAX_ARENAS)) + 1);
+		infos[count] = G_Alloc(strlen(info) + strlen("\\num\\") + strlen(va("%d", MAX_BOT_ARENAS)) + 1);
 		if (infos[count]) {
 			strcpy(infos[count], info);
 			count++;
@@ -97,15 +97,15 @@ G_LoadArenasFromFile
 static void G_LoadArenasFromFile( char *filename ) {
 	int				len;
 	fileHandle_t	f;
-	char			buf[MAX_ARENAS_TEXT];
+	char			buf[MAX_BOT_ARENAS_TEXT];
 
 	len = trap_FS_FOpenFile( filename, &f, FS_READ );
 	if ( !f ) {
 		trap_Printf( va( S_COLOR_RED "file not found: %s\n", filename ) );
 		return;
 	}
-	if ( len >= MAX_ARENAS_TEXT ) {
-		trap_Printf( va( S_COLOR_RED "file too large: %s is %i, max allowed is %i", filename, len, MAX_ARENAS_TEXT ) );
+	if ( len >= MAX_BOT_ARENAS_TEXT ) {
+		trap_Printf( va( S_COLOR_RED "file too large: %s is %i, max allowed is %i", filename, len, MAX_BOT_ARENAS_TEXT ) );
 		trap_FS_FCloseFile( f );
 		return;
 	}
@@ -114,7 +114,7 @@ static void G_LoadArenasFromFile( char *filename ) {
 	buf[len] = 0;
 	trap_FS_FCloseFile( f );
 
-	g_numArenas += G_ParseInfos( buf, MAX_ARENAS - g_numArenas, &g_arenaInfos[g_numArenas] );
+	g_numArenas += G_ParseInfos( buf, MAX_BOT_ARENAS - g_numArenas, &g_arenaInfos[g_numArenas] );
 }
 
 /*

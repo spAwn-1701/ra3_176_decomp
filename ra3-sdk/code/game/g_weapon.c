@@ -140,7 +140,7 @@ void Bullet_Fire (gentity_t *ent, float spread, int damage ) {
 		tent = G_TempEntity( tr.endpos, EV_BULLET_HIT_FLESH );
 		tent->s.eventParm = traceEnt->s.number;
 		if( LogAccuracyHit( traceEnt, ent ) ) {
-			ent->client->ps.persistant[PERS_ACCURACY_HITS]++;
+			//ent->client->ps.persistant[PERS_ACCURACY_HITS]++;
 		}
 	} else {
 		tent = G_TempEntity( tr.endpos, EV_BULLET_HIT_WALL );
@@ -237,7 +237,7 @@ void ShotgunPattern( vec3_t origin, vec3_t origin2, int seed, gentity_t *ent ) {
 		VectorMA (end, u, up, end);
 		if( ShotgunPellet( origin, end, ent ) && !hitClient ) {
 			hitClient = qtrue;
-			ent->client->ps.persistant[PERS_ACCURACY_HITS]++;
+			//ent->client->ps.persistant[PERS_ACCURACY_HITS]++;
 		}
 	}
 }
@@ -410,15 +410,13 @@ void weapon_railgun_fire (gentity_t *ent) {
 		ent->client->accurateCount += hits;
 		if ( ent->client->accurateCount >= 2 ) {
 			ent->client->accurateCount -= 2;
-			ent->client->ps.persistant[PERS_REWARD_COUNT]++;
-			ent->client->ps.persistant[PERS_REWARD] = REWARD_IMPRESSIVE;
 			ent->client->ps.persistant[PERS_IMPRESSIVE_COUNT]++;
 			// add the sprite over the player's head
 			ent->client->ps.eFlags &= ~(EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET );
 			ent->client->ps.eFlags |= EF_AWARD_IMPRESSIVE;
 			ent->client->rewardTime = level.time + REWARD_SPRITE_TIME;
 		}
-		ent->client->ps.persistant[PERS_ACCURACY_HITS]++;
+		//ent->client->ps.persistant[PERS_ACCURACY_HITS]++;
 	}
 
 }
@@ -496,7 +494,7 @@ void Weapon_LightningFire( gentity_t *ent ) {
 		tent->s.eventParm = DirToByte( tr.plane.normal );
 		tent->s.weapon = ent->s.weapon;
 		if( LogAccuracyHit( traceEnt, ent ) ) {
-			ent->client->ps.persistant[PERS_ACCURACY_HITS]++;
+			//ent->client->ps.persistant[PERS_ACCURACY_HITS]++;
 		}
 	} else if ( !( tr.surfaceFlags & SURF_NOIMPACT ) ) {
 		tent = G_TempEntity( tr.endpos, EV_MISSILE_MISS );
@@ -577,7 +575,7 @@ void FireWeapon( gentity_t *ent ) {
 
 	// track shots taken for accuracy tracking.  Grapple is not a weapon and gauntet is just not tracked
 	if( ent->s.weapon != WP_GRAPPLING_HOOK && ent->s.weapon != WP_GAUNTLET ) {
-		ent->client->ps.persistant[PERS_ACCURACY_SHOTS]++;
+		//ent->client->ps.persistant[PERS_ACCURACY_SHOTS]++;
 	}
 
 	// set aiming directions

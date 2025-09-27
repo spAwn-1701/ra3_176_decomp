@@ -3,6 +3,7 @@
 // g_local.h -- local definitions for game module
 
 #include "q_shared.h"
+#include "arena_common.h"
 #include "bg_public.h"
 #include "g_public.h"
 
@@ -30,6 +31,7 @@
 #define FL_DROPPED_ITEM			0x00001000
 #define FL_NO_BOTS				0x00002000	// spawn point not for bot use
 #define FL_NO_HUMANS			0x00004000	// spawn point just for bots
+#define FL_FORCE_GESTURE		0x00008000	// force gesture on client
 
 // movers are things like doors, plats, buttons, etc
 typedef enum {
@@ -101,6 +103,8 @@ struct gentity_s {
 	char		*target;
 	char		*targetname;
 	char		*team;
+	char		*targetShaderName;
+	char		*targetShaderNewName;
 	gentity_t	*target_ent;
 
 	float		speed;
@@ -149,6 +153,9 @@ struct gentity_s {
 	gitem_t		*item;			// for bonus items
 
 	qboolean	botDelayBegin;
+
+	int arena;
+	int addAmmoTime[16];
 };
 
 
@@ -162,6 +169,7 @@ typedef enum {
 	SPECTATOR_NOT,
 	SPECTATOR_FREE,
 	SPECTATOR_FOLLOW,
+	SPECTATOR_UNKNOWN,
 	SPECTATOR_SCOREBOARD
 } spectatorState_t;
 
@@ -203,9 +211,41 @@ typedef struct {
 	spectatorState_t	spectatorState;
 	int			spectatorClient;	// for chasecam and follow mode
 	int			wins, losses;		// tournament stats
+	qboolean	teamLeader;			// true when this client is a team leader
 } clientSession_t;
 
+//
+#define MAX_TEAMNAME		32
+#define MAX_NETNAME			36
 #define	MAX_VOTE_COUNT		3
+
+typedef enum {
+	INVITE_NONE,
+	INVITE_SPEC,
+	INVITE_COACH,
+} inviteStatus_t;
+
+typedef struct {
+	int damageGiven;
+	int damageTaken;
+	int meansOfDeath;
+	int killedMe;
+} combatStats_t;
+
+typedef struct {
+	int sent;
+	int send;
+	int clientNum;
+	int health;
+	int armor;
+	int mod;
+} killerStats_t;
+
+typedef struct {
+	int targetNum;
+	int attackerNum;
+	int victimNum;
+} lastDamage_t;
 
 // client data that stays across multiple respawns, but is cleared
 // on each level change or team change at ClientBegin()
@@ -215,14 +255,45 @@ typedef struct {
 	qboolean	localClient;		// true if "ip" info key is "localhost"
 	qboolean	initialSpawn;		// the first spawn should be at a cool location
 	qboolean	predictItemPickup;	// based on cg_predictItems userinfo
-	char		netname[36];
+	qboolean	pmoveFixed;			//
+	char		netname[MAX_NETNAME];
 	int			maxHealth;			// for handicapping
 	int			enterTime;			// level.time the client entered the game
 	playerTeamState_t teamState;	// status in teamplay games
 	int			voteCount;			// to prevent people from constantly calling votes
+	int			teamVoteCount;		// to prevent people from constantly calling votes
 	qboolean	teamInfo;			// send team overlay updates?
+
+	team_t			originalTeam;
+	int				pl;
+	int				voted;
+	int				damage;
+	int				topStats[TS_NUM_PERIODS][TS_NUM_STATS];
+	int				votesRemaining;
+	combatStats_t	combatStats[MAX_CLIENTS];
+	killerStats_t	killerStats;
+	unsigned int	dbId;
+	int				weaponRank[WP_NUM_WEAPONS];
+	lastDamage_t	lastDamage;
+	int				lineCount;
+	int				floodResetTime;
+	int				floodCount;
+	int				floodReset;
+	int				ignore[MAX_CLIENTS];
+	int				sessionKey;
+	char			password[8];
+	int				trackName;
+	int				debugDelag;
 } clientPersistant_t;
 
+#define NUM_CLIENT_HISTORY 17
+
+typedef struct {
+	vec3_t mins;
+	vec3_t maxs;
+	vec3_t currentOrigin;
+	int levelTime;
+} clientHistory_t;
 
 // this structure is cleared on each ClientSpawn(),
 // except for 'client->pers' and 'client->sess'
@@ -245,6 +316,8 @@ struct gclient_s {
 	int			oldbuttons;
 	int			latched_buttons;
 
+	vec3_t		oldOrigin;
+
 	// sum up damage over an entire frame, so
 	// shotgun blasts give a single big kick
 	int			damage_armor;		// damage absorbed by armor
@@ -255,7 +328,11 @@ struct gclient_s {
 
 	int			accurateCount;		// for "impressive" reward sound
 
+	int			accuracy_shots;		// total number of shots
+	int			accuracy_hits;		// total number of hits
+
 	//
+	int			lastkilled_client;	// last client that this client killed
 	int			lasthurt_client;	// last client that damaged this client
 	int			lasthurt_mod;		// type of damage the client did
 
@@ -272,11 +349,127 @@ struct gclient_s {
 	qboolean	fireHeld;			// used for hook
 	gentity_t	*hook;				// grapple hook if out
 
+	int			switchTeamTime;		// time the player switched teams
+
 	// timeResidual is used to handle events that happen every second
 	// like health / armor countdowns and regeneration
 	int			timeResidual;
+
+	char		*areabits;
+
+	int			telefragBounceEndFrame;
+	int			telefragDir;
+	int			observerFlags;
+	int			nextObserverChangeTime;
+
+	int			historyHead;
+	clientHistory_t	history[NUM_CLIENT_HISTORY];
+	clientHistory_t	saved;
+
+	int			frameOffset;
+	int			lastUpdateFrame;
 };
 
+typedef struct arenaSettings_s {
+	int			type;
+	int			playersperteam;
+	int			rounds;
+	int			weapons;
+	int			armor;
+	int			health;
+	int			shells;
+	int			bullets;
+	int			slugs;
+	int			grenades;
+	int			rockets;
+	int			cells;
+	int			plasma;
+	int			bfgammo;
+	int			fastswitch;
+	int			lockarena;
+	int			lockcount;
+	int			competitionmode;
+	int			unbalanced;
+	int			armorprotect;
+	int			healthprotect;
+	int			fallingdamage;
+	int			excessive;
+	int			allow_voting_gametype;
+	int			allow_voting_healtharmor;
+	int			allow_voting_playersperteam;
+	int			allow_voting_rounds;
+	int			allow_voting_healtharmorprotect;
+	int			allow_voting_weapons;
+	int			allow_voting_fallingdamage;
+	int			allow_voting_grapple;
+	int			allow_voting_excessive;
+	int			allow_voting_lockarena;
+	int			allow_voting_competitionmode;
+	int			maxplayers;
+	int			dirty;
+} arenaSettings_t;
+
+typedef enum {
+	ROUND_INIT,
+	ROUND_INIT_MATCH,
+	ROUND_COUNTDOWN_MATCH,
+	ROUND_INIT_ROUND,
+	ROUND_COUNTDOWN_ROUND,
+	ROUND_RUNNING,
+	ROUND_OVER,
+	ROUND_WARMUP,
+	ROUND_RESPAWN,
+	ROUND_PAUSED,
+	ROUND_UNPAUSED
+} roundState_t;
+
+typedef struct arenaState_s {
+	int				unknown1;
+	int				numTeams;
+	int				teams[MAX_TEAMS];
+	roundState_t	state;
+	roundState_t	resumeState;
+	int				pauseTime;
+	int				paused;
+	int				timeoutTeam;
+	int				nextCheckFrame;
+	int				countdown;
+	char			winstring[160];
+	char			unknown2[64];
+	arenaSettings_t	settings;
+	arenaSettings_t	defaults;
+	float			voteEndTime;
+	arenaSettings_t	ballot;
+	int				votesNeeded;
+	int				votesYes;
+	int				votesNo;
+	gentity_t		*voteCaller;
+	int				unknown3;
+	int				nearTeam;
+	int				round;
+	int				lastWaitingMessageTime;
+	int				lastHudUpdateTime;
+	int				numCountdownRestarts;
+	int				waitEndTime;
+	int				readyCleared;
+	int				timeoutSeconds;
+	int				roundTied;
+} arenaState_t;
+
+typedef struct teamState_s {
+	char			name[MAX_TEAMNAME];
+	int				unknown1;
+	int				arena;
+	int				score;
+	int				available;
+	int				valid;
+	int				locked;
+	team_t			sessionTeam;
+	gentity_t		*captain;
+	inviteStatus_t	invites[MAX_CLIENTS];
+	int				muted;
+	int				timeoutsRemaining;
+} teamState_t;
 
 //
 // this structure is cleared as each map is entered
@@ -294,6 +487,7 @@ typedef struct {
 	int			warmupTime;			// restart match at this time
 
 	fileHandle_t	logFile;
+	char		logFileName[512];
 
 	// store latched cvars here that we want to get at often
 	int			maxclients;
@@ -324,10 +518,15 @@ typedef struct {
 
 	// voting state
 	char		voteString[MAX_STRING_CHARS];
+	char		voteDisplayString[MAX_STRING_CHARS];
 	int			voteTime;				// level.time vote was called
+	int			voteExecuteTime;		// time the vote is executed
 	int			voteYes;
 	int			voteNo;
 	int			numVotingClients;		// set by CalculateRanks
+	int			votePassPercent;
+
+	int			unknown[520];
 
 	// spawn variables
 	qboolean	spawning;				// the G_Spawn*() functions are valid
@@ -353,6 +552,16 @@ typedef struct {
 	gentity_t	*locationHead;			// head of the location list
 	int			bodyQueIndex;			// dead bodies
 	gentity_t	*bodyQue[BODY_QUEUE_SIZE];
+
+	int			lastArena;
+	arenaState_t	arenas[MAX_ARENAS];
+	teamState_t	teams[MAX_TEAMS];
+	int			restarting;
+	int			voteFailTime;
+	int			lastTimeLeftUpdate;
+	void		*db;
+	gentity_t	*topShots[WP_NUM_WEAPONS][MAX_CLIENTS];
+	int			frameStartTime;
 } level_locals_t;
 
 
@@ -492,6 +701,7 @@ team_t TeamCount( int ignoreClientNum, int team );
 team_t PickTeam( int ignoreClientNum );
 void SetClientViewAngle( gentity_t *ent, vec3_t angle );
 gentity_t *SelectSpawnPoint ( vec3_t avoidPoint, vec3_t origin, vec3_t angles );
+void CopyToBodyQue( gentity_t *ent );
 void respawn (gentity_t *ent);
 void BeginIntermission (void);
 void InitClientPersistant (gclient_t *client);
@@ -603,14 +813,13 @@ void BotInterbreedEndMatch( void );
 // ai_main.c
 
 //some maxs
-#define MAX_NETNAME				36
 #define MAX_FILEPATH			144
 
 //bot settings
 typedef struct bot_settings_s
 {
 	char characterfile[MAX_FILEPATH];
-	int skill;
+	float skill;
 	char team[MAX_FILEPATH];
 } bot_settings_t;
 

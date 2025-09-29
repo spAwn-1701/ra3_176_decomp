@@ -918,11 +918,12 @@ qboolean	trap_GetEntityToken( char *buffer, int bufferSize );
 int		trap_DebugPolygonCreate(int color, int numPoints, vec3_t *points);
 void	trap_DebugPolygonDelete(int id);
 
+int	trap_RealTime( qtime_t *qtime );
+
 int		trap_BotLibSetup( void );
 int		trap_BotLibShutdown( void );
 int		trap_BotLibVarSet(char *var_name, char *value);
 int		trap_BotLibVarGet(char *var_name, char *value, int size);
-int		trap_BotLibDefine(char *string);
 int		trap_BotLibStartFrame(float time);
 int		trap_BotLibLoadMap(const char *mapname);
 int		trap_BotLibUpdateEntity(int ent, void /* struct bot_updateentity_s */ *bue);
@@ -958,20 +959,14 @@ int			trap_AAS_PredictClientMovement(void /* aas_clientmove_s */ *move, int entn
 
 void	trap_EA_Say(int client, char *str);
 void	trap_EA_SayTeam(int client, char *str);
-void	trap_EA_UseItem(int client, char *it);
-void	trap_EA_DropItem(int client, char *it);
-void	trap_EA_UseInv(int client, char *inv);
-void	trap_EA_DropInv(int client, char *inv);
-void	trap_EA_Gesture(int client);
 void	trap_EA_Command(int client, char *command);
 
-void	trap_EA_SelectWeapon(int client, int weapon);
+void	trap_EA_Action(int client, int action);
+void	trap_EA_Gesture(int client);
 void	trap_EA_Talk(int client);
 void	trap_EA_Attack(int client);
 void	trap_EA_Use(int client);
 void	trap_EA_Respawn(int client);
-void	trap_EA_Jump(int client);
-void	trap_EA_DelayedJump(int client);
 void	trap_EA_Crouch(int client);
 void	trap_EA_MoveUp(int client);
 void	trap_EA_MoveDown(int client);
@@ -979,6 +974,9 @@ void	trap_EA_MoveForward(int client);
 void	trap_EA_MoveBack(int client);
 void	trap_EA_MoveLeft(int client);
 void	trap_EA_MoveRight(int client);
+void	trap_EA_SelectWeapon(int client, int weapon);
+void	trap_EA_Jump(int client);
+void	trap_EA_DelayedJump(int client);
 void	trap_EA_Move(int client, vec3_t dir, float speed);
 void	trap_EA_View(int client, vec3_t viewangles);
 
@@ -1064,6 +1062,8 @@ void	trap_BotFreeWeaponState(int weaponstate);
 void	trap_BotResetWeaponState(int weaponstate);
 
 int		trap_GeneticParentsAndChildSelection(int numranks, float *ranks, int *parent1, int *parent2, int *child);
+
+void	trap_SnapVector( float *v );
 
 //============================================================================
 

@@ -185,6 +185,15 @@ void trap_DebugPolygonDelete(int id) {
 	syscall( G_DEBUG_POLYGON_DELETE, id );
 }
 
+int trap_RealTime( qtime_t *qtime ) {
+	return syscall( G_REAL_TIME, qtime );
+}
+
+void trap_SnapVector( float *v ) {
+	syscall( G_SNAPVECTOR, v );
+	return;
+}
+
 // BotLib traps start here
 int trap_BotLibSetup( void ) {
 	return syscall( BOTLIB_SETUP );
@@ -200,10 +209,6 @@ int trap_BotLibVarSet(char *var_name, char *value) {
 
 int trap_BotLibVarGet(char *var_name, char *value, int size) {
 	return syscall( BOTLIB_LIBVAR_GET, var_name, value, size );
-}
-
-int trap_BotLibDefine(char *string) {
-	return syscall( BOTLIB_DEFINE, string );
 }
 
 int trap_BotLibStartFrame(float time) {
@@ -306,22 +311,6 @@ void trap_EA_Say(int client, char *str) {
 
 void trap_EA_SayTeam(int client, char *str) {
 	syscall( BOTLIB_EA_SAY_TEAM, client, str );
-}
-
-void trap_EA_UseItem(int client, char *it) {
-	syscall( BOTLIB_EA_USE_ITEM, client, it );
-}
-
-void trap_EA_DropItem(int client, char *it) {
-	syscall( BOTLIB_EA_DROP_ITEM, client, it );
-}
-
-void trap_EA_UseInv(int client, char *inv) {
-	syscall( BOTLIB_EA_USE_INV, client, inv );
-}
-
-void trap_EA_DropInv(int client, char *inv) {
-	syscall( BOTLIB_EA_DROP_INV, client, inv );
 }
 
 void trap_EA_Gesture(int client) {

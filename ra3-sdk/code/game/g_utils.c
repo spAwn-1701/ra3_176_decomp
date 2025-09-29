@@ -471,6 +471,50 @@ void G_AddPredictableEvent( gentity_t *ent, int event, int eventParm ) {
 	BG_AddPredictableEventToPlayerstate( event, eventParm, &ent->client->ps );
 }
 
+/*
+===============
+G_AddEntityEvent
+===============
+*/
+void G_AddEntityEvent( gentity_t *ent, int event, int eventParam ) {
+	int bits;
+
+	if ( !event ) {
+		G_Printf( "G_AddEvent: zero event added for entity %i\n", ent->s.number );
+		return;
+	}
+
+	bits = ent->s.event & EV_EVENT_BITS;
+	bits = ( bits + EV_EVENT_BIT1 ) & EV_EVENT_BITS;
+	ent->s.event = event | bits;
+	ent->s.eventParm = eventParam;
+	ent->eventTime = level.time;
+}
+
+/*
+===============
+G_AddClientEvent
+===============
+*/
+void G_AddClientEvent( gentity_t *ent, int event, int eventParam ) {
+	int bits;
+
+	if ( !event ) {
+		G_Printf( "G_AddEvent: zero event added for entity %i\n", ent->s.number );
+		return;
+	}
+
+	if ( ent->client ) {
+		bits = ent->client->ps.externalEvent & EV_EVENT_BITS;
+		bits = ( bits + EV_EVENT_BIT1 ) & EV_EVENT_BITS;
+		ent->client->ps.externalEvent = event | bits;
+		ent->client->ps.externalEventParm = eventParam;
+		ent->client->ps.externalEventTime = level.time;
+		ent->eventTime = level.time;
+	} else {
+		G_Printf( "Called AddClientEvent with non-client entity %i.\n", ent->s.number );
+	}
+}
 
 /*
 ===============
@@ -479,30 +523,18 @@ G_AddEvent
 Adds an event+parm and twiddles the event counter
 ===============
 */
-void G_AddEvent( gentity_t *ent, int event, int eventParm ) {
-	int		bits;
-
+void G_AddEvent( gentity_t *ent, int event, int eventParam ) {
 	if ( !event ) {
 		G_Printf( "G_AddEvent: zero event added for entity %i\n", ent->s.number );
 		return;
 	}
 
-	// clients need to add the event in playerState_t instead of entityState_t
 	if ( ent->client ) {
-		bits = ent->client->ps.externalEvent & EV_EVENT_BITS;
-		bits = ( bits + EV_EVENT_BIT1 ) & EV_EVENT_BITS;
-		ent->client->ps.externalEvent = event | bits;
-		ent->client->ps.externalEventParm = eventParm;
-		ent->client->ps.externalEventTime = level.time;
+		G_AddClientEvent( ent, event, eventParam );
 	} else {
-		bits = ent->s.event & EV_EVENT_BITS;
-		bits = ( bits + EV_EVENT_BIT1 ) & EV_EVENT_BITS;
-		ent->s.event = event | bits;
-		ent->s.eventParm = eventParm;
+		G_AddEntityEvent( ent, event, eventParam );
 	}
-	ent->eventTime = level.time;
 }
-
 
 /*
 =============

@@ -591,6 +591,8 @@ void Cmd_FollowCycle_f( gentity_t *ent, int dir );
 //
 // g_items.c
 //
+extern gweapon_t weaponData[];
+
 void G_CheckTeamItems( void );
 void G_RunItem( gentity_t *ent );
 void RespawnItem( gentity_t *ent );
@@ -637,6 +639,8 @@ char	*vtos( const vec3_t v );
 float vectoyaw( const vec3_t vec );
 
 void G_AddPredictableEvent( gentity_t *ent, int event, int eventParm );
+void G_AddEntityEvent( gentity_t *ent, int event, int eventParam );
+void G_AddClientEvent( gentity_t *ent, int event, int eventParam );
 void G_AddEvent( gentity_t *ent, int event, int eventParm );
 void G_SetOrigin( gentity_t *ent, vec3_t origin );
 

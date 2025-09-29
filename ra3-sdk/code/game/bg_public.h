@@ -558,6 +558,11 @@ typedef struct gitem_s {
 	char		*sounds;		// string of all sounds this item will use
 } gitem_t;
 
+typedef struct gweapon_s {
+	int excessiveMaxAmmo;
+	int excessiveAddTime;
+} gweapon_t;
+
 // included in both the game dll and the client
 extern	gitem_t	bg_itemlist[];
 extern	int		bg_numItems;

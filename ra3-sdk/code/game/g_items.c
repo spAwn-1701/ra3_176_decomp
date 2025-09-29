@@ -24,6 +24,19 @@
 #define	RESPAWN_MEGAHEALTH	120
 #define	RESPAWN_POWERUP		120
 
+gweapon_t weaponData[WP_NUM_WEAPONS] = {
+	{   0,   0 }, /* WP_NONE */
+	{  -1, 400 }, /* WP_GAUNTLET */
+	{ 500,  50 }, /* WP_MACHINEGUN */
+	{  50, 500 }, /* WP_SHOTGUN */
+	{  50, 400 }, /* WP_GRENADE_LAUNCHER */
+	{ 100, 100 }, /* WP_ROCKET_LAUNCHER */
+	{ 200, 100 }, /* WP_LIGHTNING */
+	{ 100, 100 }, /* WP_RAILGUN */
+	{ 100, 100 }, /* WP_PLASMAGUN */
+	{  60, 800 }, /* WP_BFG */
+	{  -1, 400 }  /* WP_GRAPPLING_HOOK */
+};
 
 //======================================================================
 

@@ -52,7 +52,7 @@ void P_DamageFeedback( gentity_t *player ) {
 	// play an apropriate pain sound
 	if ( (level.time > player->pain_debounce_time) && !(player->flags & FL_GODMODE) ) {
 		player->pain_debounce_time = level.time + 700;
-		G_AddEvent( player, EV_PAIN, player->health );
+		G_AddEntityEvent( player, EV_PAIN, player->health );
 		client->ps.damageEvent++;
 	}
 
@@ -163,9 +163,9 @@ G_SetClientSound
 */
 void G_SetClientSound( gentity_t *ent ) {
 	if (ent->waterlevel && (ent->watertype&(CONTENTS_LAVA|CONTENTS_SLIME)) )
-		ent->s.loopSound = level.snd_fry;
+		ent->client->ps.loopSound = level.snd_fry;
 	else
-		ent->s.loopSound = 0;
+		ent->client->ps.loopSound = 0;
 }
 
 
@@ -253,11 +253,13 @@ void	G_TouchTriggers( gentity_t *ent ) {
 
 		// ignore most entities if a spectator
 		if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR ) {
-			if ( hit->s.eType != ET_TELEPORT_TRIGGER &&
-				// this is ugly but adding a new ET_? type will
-				// most likely cause network incompatibilities
-				hit->touch != Touch_DoorTrigger) {
-				continue;
+			if ( ent->client->ps.persistant[PERS_ARENA] || idmap ) {
+				if ( hit->s.eType != ET_TELEPORT_TRIGGER &&
+				     // this is ugly but adding a new ET_? type will
+				     // most likely cause network incompatibilities
+				     hit->touch != Touch_DoorTrigger ) {
+					continue;
+				}
 			}
 		}
 
@@ -283,6 +285,107 @@ void	G_TouchTriggers( gentity_t *ent ) {
 			ent->touch( ent, hit, &trace );
 		}
 	}
+
+	// if we didn't touch a jump pad this pmove frame
+	if ( ent->client->ps.jumppad_frame != ent->client->ps.pmove_framecount ) {
+		ent->client->ps.jumppad_frame = 0;
+		ent->client->ps.jumppad_ent = 0;
+	}
+}
+
+/*
+=================
+SpectatorCheckButtons
+=================
+*/
+#define FLAG_CHANGE_MODE 1
+#define FLAG_CHANGE_TRACKING 2
+
+void SpectatorCheckButtons( gentity_t *ent, usercmd_t *ucmd ) {
+	gclient_t *client;
+
+	client = ent->client;
+
+	if ( ( client->buttons & BUTTON_ATTACK ) == 0 && level.time > client->nextObserverChangeTime ) {
+		client->observerFlags &= ~FLAG_CHANGE_MODE;
+	} else if ( client->ps.persistant[PERS_ARENA] && ( client->buttons & BUTTON_ATTACK ) && !( client->observerFlags & FLAG_CHANGE_MODE ) ) {
+		client->nextObserverChangeTime = level.time + 250;
+		client->observerFlags |= FLAG_CHANGE_MODE;
+		change_omode( ent );
+	}
+
+	if ( ucmd->upmove == 0 && level.time > client->nextObserverChangeTime ) {
+		client->observerFlags &= ~FLAG_CHANGE_TRACKING;
+	}
+
+	if ( ( client->sess.spectatorState == SPECTATOR_UNKNOWN || client->sess.spectatorState == SPECTATOR_FOLLOW ) && ucmd->upmove &&
+	     !( client->observerFlags & FLAG_CHANGE_TRACKING ) ) {
+		client->nextObserverChangeTime = level.time + 250;
+		client->observerFlags |= FLAG_CHANGE_TRACKING;
+
+		if ( ucmd->upmove > 0 ) {
+			track_next( ent );
+		} else {
+			track_prev( ent );
+		}
+	}
+}
+
+/*
+=================
+DoFollowTypeThink
+=================
+*/
+void DoFollowTypeThink( gentity_t *ent, usercmd_t *ucmd ) {
+	gclient_t *client;
+	gclient_t *followed;
+	int followedClientNum;
+	int pers[16];
+	int eflags;
+	int i;
+
+	client = ent->client;
+
+	followedClientNum = ent->client->sess.spectatorClient;
+
+	if ( followedClientNum < 0 ) {
+		return;
+	}
+
+	followed = &level.clients[followedClientNum];
+
+	if ( followed->pers.connected != CON_CONNECTED ||
+	     followed->sess.sessionTeam == TEAM_FREE ||
+	     followed->ps.persistant[PERS_ARENA] != ent->client->ps.persistant[PERS_ARENA] ||
+	     followed->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR ||
+	     followed == ent->client ) {
+		track_next( ent );
+		return;
+	}
+
+	for ( i = 0; i < (int)( sizeof( pers ) / sizeof( pers[0] ) ); i++ ) {
+		pers[i] = ent->client->ps.persistant[i];
+	}
+
+	eflags = ent->client->ps.eFlags & EF_VOTED;
+
+	/* copy bulk of playerstate from followed client */
+	ent->client->ps = followed->ps;
+
+	/* restore state unique to us */
+	ent->client->ps.eFlags |= eflags;
+
+	for ( i = 0; i < (int)( sizeof( pers ) / sizeof( pers[0] ) ); i++ ) {
+		ent->client->ps.persistant[i] = pers[i];
+	}
+
+	ent->client->ps.pm_flags |= PMF_FOLLOW;
+
+	if ( client->sess.spectatorState == SPECTATOR_UNKNOWN ) {
+		client->ps.stats[STAT_SPECTATOR] = SPECTATOR_UNKNOWN;
+	} else {
+		client->ps.stats[STAT_SPECTATOR] = SPECTATOR_NOT;
+	}
 }
 
 /*
@@ -291,43 +394,57 @@ SpectatorThink
 =================
 */
 void SpectatorThink( gentity_t *ent, usercmd_t *ucmd ) {
-	pmove_t	pm;
-	gclient_t	*client;
+	gclient_t *client;
+	pmove_t pm;
 
 	client = ent->client;
 
-	if ( client->sess.spectatorState != SPECTATOR_FOLLOW ) {
+	SpectatorCheckButtons( ent, ucmd );
+
+	if ( client->sess.spectatorState == SPECTATOR_UNKNOWN ||
+	     client->sess.spectatorState == SPECTATOR_FOLLOW ) {
+		DoFollowTypeThink( ent, ucmd );
+	} else {
 		client->ps.pm_type = PM_SPECTATOR;
-		client->ps.speed = 400;	// faster than normal
+		client->ps.speed = 400; // faster than normal
+		client->ps.pm_flags &= ~PMF_FOLLOW;
 
 		// set up for pmove
-		memset (&pm, 0, sizeof(pm));
+		memset( &pm, 0, sizeof( pm ) );
 		pm.ps = &client->ps;
 		pm.cmd = *ucmd;
-		pm.tracemask = MASK_PLAYERSOLID & ~CONTENTS_BODY;	// spectators can fly through bodies
+		pm.tracemask = MASK_PLAYERSOLID & ~CONTENTS_BODY; // spectators can fly through bodies
 		pm.trace = trap_Trace;
 		pm.pointcontents = trap_PointContents;
 
 		// perform a pmove
-		Pmove (&pm);
-
+		Pmove( &pm );
 		// save results of pmove
 		VectorCopy( client->ps.origin, ent->s.origin );
 
 		G_TouchTriggers( ent );
 		trap_UnlinkEntity( ent );
+
+		client->ps.stats[STAT_SPECTATOR] = SPECTATOR_NOT;
 	}
 
 	client->oldbuttons = client->buttons;
 	client->buttons = ucmd->buttons;
-
-	// attack button cycles through spectators
-	if ( ( client->buttons & BUTTON_ATTACK ) && ! ( client->oldbuttons & BUTTON_ATTACK ) ) {
-		Cmd_FollowCycle_f( ent, 1 );
-	}
 }
 
+/*
+==================
+SpectatorClientEndFrame
 
+==================
+*/
+void SpectatorClientEndFrame( gentity_t *ent ) {
+	if ( ent->client->sess.spectatorState == SPECTATOR_SCOREBOARD ) {
+		ent->client->ps.pm_flags |= PMF_SCOREBOARD;
+	} else {
+		ent->client->ps.pm_flags &= ~PMF_SCOREBOARD;
+	}
+}
 
 /*
 =================
@@ -370,6 +487,14 @@ Actions that happen once a second
 */
 void ClientTimerActions( gentity_t *ent, int msec ) {
 	gclient_t *client;
+	int i;
+	int *addAmmoTime;
+	int *ammo;
+	arenaState_t *arena;
+	int excessive;
+
+	arena = &level.arenas[ent->client->ps.persistant[PERS_ARENA]];
+	excessive = arena->settings.excessive;
 
 	client = ent->client;
 	client->timeResidual += msec;
@@ -377,33 +502,59 @@ void ClientTimerActions( gentity_t *ent, int msec ) {
 	while ( client->timeResidual >= 1000 ) {
 		client->timeResidual -= 1000;
 
-		// regenerate
-		if ( client->ps.powerups[PW_REGEN] ) {
-			if ( ent->health < client->ps.stats[STAT_MAX_HEALTH]) {
-				ent->health += 15;
-				if ( ent->health > client->ps.stats[STAT_MAX_HEALTH] * 1.1 ) {
-					ent->health = client->ps.stats[STAT_MAX_HEALTH] * 1.1;
+		if ( excessive ) {
+			if ( ent->health < 300 ) {
+				if ( client->ps.powerups[PW_REGEN] ) {
+					ent->health += 50;
+				} else {
+					ent->health += 5;
 				}
-				G_AddEvent( ent, EV_POWERUP_REGEN, 0 );
-			} else if ( ent->health < client->ps.stats[STAT_MAX_HEALTH] * 2) {
-				ent->health += 5;
-				if ( ent->health > client->ps.stats[STAT_MAX_HEALTH] * 2 ) {
-					ent->health = client->ps.stats[STAT_MAX_HEALTH] * 2;
+
+				if ( ent->health > 300 ) {
+					ent->health = 300;
 				}
-				G_AddEvent( ent, EV_POWERUP_REGEN, 0 );
 			}
 		} else {
-			// count down health when over max
-			if ( ent->health > client->ps.stats[STAT_MAX_HEALTH] ) {
-				ent->health--;
+			if ( client->ps.powerups[PW_REGEN] ) {
+				if ( ent->health < client->ps.stats[STAT_MAX_HEALTH] ) {
+					ent->health += 15;
+					if ( ent->health > client->ps.stats[STAT_MAX_HEALTH] * 1.1 ) {
+						ent->health = client->ps.stats[STAT_MAX_HEALTH] * 1.1;
+					}
+					G_AddEvent( ent, EV_POWERUP_REGEN, 0 );
+				} else if ( ent->health < client->ps.stats[STAT_MAX_HEALTH] * 2 ) {
+					ent->health += 5;
+					if ( ent->health > client->ps.stats[STAT_MAX_HEALTH] * 2 ) {
+						ent->health = client->ps.stats[STAT_MAX_HEALTH] * 2;
+					}
+					G_AddEvent( ent, EV_POWERUP_REGEN, 0 );
+				}
+			} else {
+				// count down health when over max
+				if ( ent->health > client->ps.stats[STAT_MAX_HEALTH] ) {
+					ent->health--;
+				}
+			}
+
+			// count down armor when over max
+			if ( client->ps.stats[STAT_ARMOR] > client->ps.stats[STAT_MAX_HEALTH] ) {
+				client->ps.stats[STAT_ARMOR]--;
 			}
 		}
+	}
 
-		// count down armor when over max
-		if ( client->ps.stats[STAT_ARMOR] > client->ps.stats[STAT_MAX_HEALTH] ) {
-			client->ps.stats[STAT_ARMOR]--;
+	if ( excessive ) {
+		if ( arena->settings.type != AT_PRACTICE ) {
+			addAmmoTime = ent->addAmmoTime;
+			ammo = ent->client->ps.ammo;
+
+			for ( i = WP_MACHINEGUN; i < WP_GRAPPLING_HOOK; i++ ) {
+				while ( ammo[i] < weaponData[i].excessiveMaxAmmo && level.time >= addAmmoTime[i] ) {
+					addAmmoTime[i] += weaponData[i].excessiveAddTime * 4;
+					ammo[i]++;
+				}
+			}
 		}
-
 	}
 }
 
@@ -436,7 +587,7 @@ but any server game effects are handled here
 ================
 */
 void ClientEvents( gentity_t *ent, int oldEventSequence ) {
-	int		i;
+	int		i, j;
 	int		event;
 	gclient_t *client;
 	int		damage;
@@ -463,6 +614,9 @@ void ClientEvents( gentity_t *ent, int oldEventSequence ) {
 			if ( g_dmflags.integer & DF_NO_FALLING ) {
 				break;
 			}
+			if ( ent->client && !level.arenas[ent->client->ps.persistant[PERS_ARENA]].settings.fallingdamage ) {
+				break;
+			}
 			if ( event == EV_FALL_FAR ) {
 				damage = 10;
 			} else {
@@ -480,24 +634,28 @@ void ClientEvents( gentity_t *ent, int oldEventSequence ) {
 		case EV_USE_ITEM1:		// teleporter
 			// drop flags in CTF
 			item = NULL;
+			j = 0;
 
 			if ( ent->client->ps.powerups[ PW_REDFLAG ] ) {
 				item = BG_FindItemForPowerup( PW_REDFLAG );
-				i = PW_REDFLAG;
+				j = PW_REDFLAG;
 			} else if ( ent->client->ps.powerups[ PW_BLUEFLAG ] ) {
 				item = BG_FindItemForPowerup( PW_BLUEFLAG );
-				i = PW_BLUEFLAG;
+				j = PW_BLUEFLAG;
+			} else if ( ent->client->ps.powerups[ PW_NEUTRALFLAG ] ) {
+				item = BG_FindItemForPowerup( PW_NEUTRALFLAG );
+				j = PW_NEUTRALFLAG;
 			}
 
 			if ( item ) {
 				drop = Drop_Item( ent, item, 0 );
 				// decide how many seconds it has left
-				drop->count = ( ent->client->ps.powerups[ i ] - level.time ) / 1000;
+				drop->count = ( ent->client->ps.powerups[ j ] - level.time ) / 1000;
 				if ( drop->count < 1 ) {
 					drop->count = 1;
 				}
 
-				ent->client->ps.powerups[ i ] = 0;
+				ent->client->ps.powerups[ j ] = 0;
 			}
 
 			SelectSpawnPoint( ent->client->ps.origin, origin, angles );
@@ -505,7 +663,7 @@ void ClientEvents( gentity_t *ent, int oldEventSequence ) {
 			break;
 
 		case EV_USE_ITEM2:		// medkit
-			ent->health = ent->client->ps.stats[STAT_MAX_HEALTH];
+			ent->health = ent->client->ps.stats[STAT_MAX_HEALTH] + 25;
 			break;
 
 		default:
@@ -515,7 +673,110 @@ void ClientEvents( gentity_t *ent, int oldEventSequence ) {
 
 }
 
+/*
+==============
+SendPendingPredictableEvents
+==============
+*/
+void SendPendingPredictableEvents( playerState_t *ps ) {
+	gentity_t *t;
+	int event, seq;
+	int extEvent, number;
+
+	// if there are still events pending
+	if ( ps->entityEventSequence < ps->eventSequence ) {
+		// create a temporary entity for this event which is sent to everyone
+		// except the client who generated the event
+		seq = ps->entityEventSequence & (MAX_PS_EVENTS-1);
+		event = ps->events[ seq ] | ( ( ps->entityEventSequence & 3 ) << 8 );
+		// set external event to zero before calling BG_PlayerStateToEntityState
+		extEvent = ps->externalEvent;
+		ps->externalEvent = 0;
+		// create temporary entity for event
+		t = G_TempEntity( ps->origin, event );
+		number = t->s.number;
+		BG_PlayerStateToEntityState( ps, &t->s, qtrue );
+		t->s.number = number;
+		t->s.eType = ET_EVENTS + event;
+		t->s.eFlags |= EF_PLAYER_EVENT;
+		t->s.otherEntityNum = ps->clientNum;
+		// send to everyone except the client who generated the event
+		t->r.svFlags |= SVF_NOTSINGLECLIENT;
+		t->r.singleClient = ps->clientNum;
+		// set back external event
+		ps->externalEvent = extEvent;
+	}
+}
+
+/*
+==============
+PausedThink
+==============
+*/
 void BotTestSolid(vec3_t origin);
+
+void PausedThink(gentity_t *ent, usercmd_t *ucmd) {
+	// stripped down version of ClientThink_real
+	gclient_t *client;
+	pmove_t pm;
+	int oldEventSequence;
+
+	client = ent->client;
+	client->ps.pm_type = PM_FREEZE;
+	client->ps.gravity = g_gravity.value;
+	client->ps.speed = g_speed.value;
+
+	oldEventSequence = client->ps.eventSequence;
+
+	memset(&pm, 0, sizeof(pm));
+	pm.ps = &client->ps;
+	pm.cmd = *ucmd;
+	if (pm.ps->pm_type == PM_DEAD) {
+		pm.tracemask = MASK_PLAYERSOLID & ~CONTENTS_BODY;
+	} else if (ent->r.svFlags & SVF_BOT) {
+		pm.tracemask = MASK_PLAYERSOLID | CONTENTS_BOTCLIP;
+	} else {
+		pm.tracemask = MASK_PLAYERSOLID;
+	}
+	pm.trace = trap_Trace;
+	pm.pointcontents = trap_PointContents;
+	pm.debugLevel = g_debugMove.integer;
+	pm.noFootsteps = (g_dmflags.integer & DF_NO_FOOTSTEPS) > 0;
+	pm.pmove_fixed = pmove_fixed.integer | client->pers.pmoveFixed;
+	pm.pmove_msec = pmove_msec.integer;
+	VectorCopy(client->ps.origin, client->oldOrigin);
+
+	Pmove(&pm);
+
+	if (ent->client->ps.eventSequence != oldEventSequence) {
+		ent->eventTime = level.time;
+	}
+
+	BG_PlayerStateToEntityState(&ent->client->ps, &ent->s, qtrue);
+	SendPendingPredictableEvents(&ent->client->ps);
+
+	VectorCopy(ent->s.pos.trBase, ent->r.currentOrigin);
+	VectorCopy(pm.mins, ent->r.mins);
+	VectorCopy(pm.maxs, ent->r.maxs);
+	ent->waterlevel = pm.waterlevel;
+	ent->watertype = pm.watertype;
+
+	ClientEvents(ent, oldEventSequence);
+
+	trap_LinkEntity (ent);
+
+	VectorCopy(ent->client->ps.origin, ent->r.currentOrigin);
+
+	BotTestSolid(ent->r.currentOrigin);
+
+	if (ent->client->ps.eventSequence != oldEventSequence) {
+		ent->eventTime = level.time;
+	}
+
+	client->oldbuttons = client->buttons;
+	client->buttons = ucmd->buttons;
+	client->latched_buttons |= client->buttons & ~client->oldbuttons;
+}
 
 /*
 ==============
@@ -536,8 +797,15 @@ void ClientThink_real( gentity_t *ent ) {
 	int			msec;
 	usercmd_t	*ucmd;
 
+	// FIXME
+	UNUSED(oldOrigin);
+
 	client = ent->client;
 
+	// don't think if the client is not yet connected (and thus not yet spawned in)
+	if (client->pers.connected != CON_CONNECTED) {
+		return;
+	}
 	// mark the time, so the connection sprite can be removed
 	ucmd = &ent->client->pers.cmd;
 
@@ -551,14 +819,36 @@ void ClientThink_real( gentity_t *ent ) {
 //		G_Printf("serverTime >>>>>\n" );
 	} 
 
+	client->frameOffset = trap_Milliseconds() - level.frameStartTime;
+	client->lastUpdateFrame = level.framenum;
+
 	msec = ucmd->serverTime - client->ps.commandTime;
 	// following others may result in bad times, but we still want
 	// to check for follow toggles
-	if ( msec < 1 && client->sess.spectatorState != SPECTATOR_FOLLOW ) {
+	if (msec < 1 && client->sess.spectatorState != SPECTATOR_FOLLOW &&
+	                client->sess.spectatorState != SPECTATOR_UNKNOWN) {
 		return;
 	}
 	if ( msec > 200 ) {
 		msec = 200;
+	}
+
+	if ( pmove_msec.integer < 8 ) {
+		trap_Cvar_Set("pmove_msec", "8");
+	}
+	else if (pmove_msec.integer > 33) {
+		trap_Cvar_Set("pmove_msec", "33");
+	}
+
+	if ( pmove_fixed.integer || client->pers.pmoveFixed ) {
+		ucmd->serverTime = ((ucmd->serverTime + pmove_msec.integer-1) / pmove_msec.integer) * pmove_msec.integer;
+		//if (ucmd->serverTime - client->ps.commandTime <= 0)
+		//	return;
+	}
+
+	if (level.arenas[client->ps.persistant[PERS_ARENA]].paused) {
+		PausedThink(ent, ucmd);
+		return;
 	}
 
 	//
@@ -570,7 +860,7 @@ void ClientThink_real( gentity_t *ent ) {
 	}
 
 	// spectators don't do much
-	if ( client->sess.sessionTeam == TEAM_SPECTATOR ) {
+	if ( client->sess.sessionTeam == TEAM_SPECTATOR && ( client->ps.persistant[PERS_ARENA] || idmap ) ) {
 		if ( client->sess.spectatorState == SPECTATOR_SCOREBOARD ) {
 			return;
 		}
@@ -585,7 +875,7 @@ void ClientThink_real( gentity_t *ent ) {
 
 	// clear the rewards if time
 	if ( level.time > client->rewardTime ) {
-		client->ps.eFlags &= ~(EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET );
+		client->ps.eFlags &= ~(EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET |EF_AWARD_HOLYSHIT | EF_AWARD_ACCURACY | EF_AWARD_CAP );
 	}
 
 	if ( client->noclip ) {
@@ -619,14 +909,23 @@ void ClientThink_real( gentity_t *ent ) {
 	// check for the hit-scan gauntlet, don't let the action
 	// go through as an attack unless it actually hits something
 	if ( client->ps.weapon == WP_GAUNTLET && !( ucmd->buttons & BUTTON_TALK ) &&
-		( ucmd->buttons & BUTTON_ATTACK ) && client->ps.weaponTime <= 0 ) {
+		( ucmd->buttons & BUTTON_ATTACK ) && client->ps.weaponTime <= 0 &&
+	    !(client->ps.pm_flags & PMF_RESPAWNED) ) {
 		pm.gauntletHit = CheckGauntletAttack( ent );
+	}
+
+	if ( ent->flags & FL_FORCE_GESTURE ) {
+		ent->flags &= ~FL_FORCE_GESTURE;
+		ent->client->pers.cmd.buttons |= BUTTON_GESTURE;
 	}
 
 	pm.ps = &client->ps;
 	pm.cmd = *ucmd;
 	if ( pm.ps->pm_type == PM_DEAD ) {
 		pm.tracemask = MASK_PLAYERSOLID & ~CONTENTS_BODY;
+	}
+	else if ( ent->r.svFlags & SVF_BOT ) {
+		pm.tracemask = MASK_PLAYERSOLID | CONTENTS_BOTCLIP;
 	}
 	else {
 		pm.tracemask = MASK_PLAYERSOLID;
@@ -636,7 +935,50 @@ void ClientThink_real( gentity_t *ent ) {
 	pm.debugLevel = g_debugMove.integer;
 	pm.noFootsteps = ( g_dmflags.integer & DF_NO_FOOTSTEPS ) > 0;
 
-	VectorCopy( client->ps.origin, oldOrigin );
+	pm.pmove_fixed = pmove_fixed.integer | client->pers.pmoveFixed;
+	pm.pmove_msec = pmove_msec.integer;
+
+	VectorCopy( client->ps.origin, client->oldOrigin );
+
+	// jitter around to fill arena without telefragging
+	if (client->telefragBounceEndFrame && client->telefragBounceEndFrame >= level.framenum) {
+		pm.tracemask = CONTENTS_SOLID;
+
+		switch (client->telefragDir) {
+			case 0:
+				pm.cmd.forwardmove = 0;
+				pm.cmd.rightmove = 127;
+				break;
+			case 45:
+				pm.cmd.forwardmove = 127;
+				pm.cmd.rightmove = 127;
+				break;
+			case 90:
+				pm.cmd.forwardmove = 127;
+				pm.cmd.rightmove = 0;
+				break;
+			case 135:
+				pm.cmd.forwardmove = 127;
+				pm.cmd.rightmove = -127;
+				break;
+			case 180:
+				pm.cmd.forwardmove = 0;
+				pm.cmd.rightmove = -127;
+				break;
+			case 225:
+				pm.cmd.forwardmove = -127;
+				pm.cmd.rightmove = -127;
+				break;
+			case 270:
+				pm.cmd.forwardmove = -127;
+				pm.cmd.rightmove = 0;
+				break;
+			default:
+				pm.cmd.forwardmove = -127;
+				pm.cmd.rightmove = 127;
+				break;
+		}
+	}
 
 	// perform a pmove
 	Pmove (&pm);
@@ -645,18 +987,16 @@ void ClientThink_real( gentity_t *ent ) {
 	if ( ent->client->ps.eventSequence != oldEventSequence ) {
 		ent->eventTime = level.time;
 	}
+
 	BG_PlayerStateToEntityState( &ent->client->ps, &ent->s, qtrue );
+	SendPendingPredictableEvents( &ent->client->ps );
+
 	if ( !( ent->client->ps.eFlags & EF_FIRING ) ) {
 		client->fireHeld = qfalse;		// for grapple
 	}
 
-#if 1
-	// use the precise origin for linking
-	VectorCopy( ent->client->ps.origin, ent->r.currentOrigin );
-#else
 	// use the snapped origin for linking so it matches client predicted versions
 	VectorCopy( ent->s.pos.trBase, ent->r.currentOrigin );
-#endif
 
 	VectorCopy (pm.mins, ent->r.mins);
 	VectorCopy (pm.maxs, ent->r.maxs);
@@ -673,11 +1013,19 @@ void ClientThink_real( gentity_t *ent ) {
 		G_TouchTriggers( ent );
 	}
 
+	// NOTE: now copy the exact origin over otherwise clients can be snapped into solid
+	VectorCopy( ent->client->ps.origin, ent->r.currentOrigin );
+
 	//test for solid areas in the AAS file
 	BotTestSolid(ent->r.currentOrigin);
 
 	// touch other objects
 	ClientImpacts( ent, &pm );
+
+	// save results of triggers and client events
+	if (ent->client->ps.eventSequence != oldEventSequence) {
+		ent->eventTime = level.time;
+	}
 
 	// swap and latch button actions
 	client->oldbuttons = client->buttons;
@@ -688,21 +1036,13 @@ void ClientThink_real( gentity_t *ent ) {
 	if ( client->ps.stats[STAT_HEALTH] <= 0 ) {
 		// wait for the attack button to be pressed
 		if ( level.time > client->respawnTime ) {
-#if 0
-			// forcerespawn is to prevent users from waiting out powerups
-			if ( g_forcerespawn.integer > 0 && 
-				( level.time - client->respawnTime ) > g_forcerespawn.integer * 1000 ) {
-				respawn( ent );
-				return;
-			}
-#endif
-		
-			// pressing attack or use is the normal respawn method
-			if ( ucmd->buttons & ( BUTTON_ATTACK | BUTTON_USE_HOLDABLE ) ) {
-				respawn( ent );
-			}
+			respawn( ent );
 		}
 		return;
+	}
+
+	if (level.arenas[client->ps.persistant[PERS_ARENA]].settings.excessive && (ucmd->buttons & BUTTON_ATTACK)) {
+		ent->addAmmoTime[client->ps.weapon] = level.time + weaponData[client->ps.weapon].excessiveAddTime * 4;
 	}
 
 	// perform once-a-second actions
@@ -726,63 +1066,26 @@ void ClientThink( int clientNum ) {
 	// phone jack if they don't get any for a while
 	ent->client->lastCmdTime = level.time;
 
-	if ( !g_synchronousClients.integer ) {
+	if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer ) {
 		ClientThink_real( ent );
 	}
 }
 
-
-void G_RunClient( gentity_t *ent ) {
-	if ( !g_synchronousClients.integer ) {
-		return;
-	}
-	ent->client->pers.cmd.serverTime = level.time;
-	ClientThink_real( ent );
-}
-
-
 /*
 ==================
-SpectatorClientEndFrame
+G_RunClient
 
 ==================
 */
-void SpectatorClientEndFrame( gentity_t *ent ) {
-	gclient_t	*cl;
+void G_RunClient( gentity_t *ent ) {
+	G_RunThink( ent );
 
-	// if we are doing a chase cam or a remote view, grab the latest info
-	if ( ent->client->sess.spectatorState == SPECTATOR_FOLLOW ) {
-		int		clientNum;
-
-		clientNum = ent->client->sess.spectatorClient;
-
-		// team follow1 and team follow2 go to whatever clients are playing
-		if ( clientNum == -1 ) {
-			clientNum = level.follow1;
-		} else if ( clientNum == -2 ) {
-			clientNum = level.follow2;
-		}
-		if ( clientNum >= 0 ) {
-			cl = &level.clients[ clientNum ];
-			if ( cl->pers.connected == CON_CONNECTED && cl->sess.sessionTeam != TEAM_SPECTATOR ) {
-				ent->client->ps = cl->ps;
-				ent->client->ps.pm_flags |= PMF_FOLLOW;
-				return;
-			} else {
-				// drop them to free spectators unless they are dedicated camera followers
-				if ( ent->client->sess.spectatorClient >= 0 ) {
-					ent->client->sess.spectatorState = SPECTATOR_FREE;
-					ClientBegin( ent->client - level.clients );
-				}
-			}
-		}
+	if ( !g_synchronousClients.integer ) {
+		return;
 	}
 
-	if ( ent->client->sess.spectatorState == SPECTATOR_SCOREBOARD ) {
-		ent->client->ps.pm_flags |= PMF_SCOREBOARD;
-	} else {
-		ent->client->ps.pm_flags &= ~PMF_SCOREBOARD;
-	}
+	ent->client->pers.cmd.serverTime = level.time;
+	ClientThink_real( ent );
 }
 
 /*
@@ -794,9 +1097,15 @@ A fast client will have multiple ClientThink for each ClientEdFrame,
 while a slow client may have multiple ClientEndFrame between ClientThink.
 ==============
 */
+
+// FIXME remove once g_unlagged.c is added
+extern void G_PredictPlayerMove( gentity_t *ent, float frametime );
+extern void G_StoreHistory( gentity_t *ent );
+
 void ClientEndFrame( gentity_t *ent ) {
 	int			i;
 	clientPersistant_t	*pers;
+	int			frames;
 
 	if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR ) {
 		SpectatorClientEndFrame( ent );
@@ -811,14 +1120,6 @@ void ClientEndFrame( gentity_t *ent ) {
 			ent->client->ps.powerups[ i ] = 0;
 		}
 	}
-
-	// save network bandwidth
-#if 0
-	if ( !g_synchronousClients->integer && ent->client->ps.pm_type == PM_NORMAL ) {
-		// FIXME: this must change eventually for non-sync demo recording
-		VectorClear( ent->client->ps.viewangles );
-	}
-#endif
 
 	//
 	// If the end of unit layout is displayed, don't give
@@ -845,8 +1146,33 @@ void ClientEndFrame( gentity_t *ent ) {
 
 	G_SetClientSound (ent);
 
-	// set the latest infor
+	// set the latest information
 	BG_PlayerStateToEntityState( &ent->client->ps, &ent->s, qtrue );
+	SendPendingPredictableEvents( &ent->client->ps );
+
+	// mark as not missing updates initially
+	ent->client->ps.eFlags &= ~EF_CONNECTION;
+
+	// see how many frames the client has missed
+	frames = level.framenum - ent->client->lastUpdateFrame - 1;
+
+	// don't extrapolate more than two frames
+	if ( frames > 2 ) {
+		frames = 2;
+
+		// if they missed more than two in a row, show the phone jack
+		ent->client->ps.eFlags |= EF_CONNECTION;
+		ent->s.eFlags |= EF_CONNECTION;
+	}
+
+	// did the client miss any frames?
+	if ( frames > 0 && g_smoothClients.integer ) {
+		// yep, missed one or more, so extrapolate the player's movement
+		G_PredictPlayerMove( ent, (float)frames / sv_fps.integer );
+		// save network bandwidth
+		SnapVector( ent->s.pos.trBase );
+	}
+
+	// store the client's position for backward reconciliation later
+	G_StoreHistory( ent );
 }
-
-

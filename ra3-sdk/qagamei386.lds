@@ -86,6 +86,7 @@ SECTIONS
     . = 0x000846b8 - 0x0001da34; */game/bg_lib.o                   (.text .text.*);
     . = 0x00085054 - 0x0001da34; */game/bg_misc.o                  (.text .text.*);
     . = 0x00086384 - 0x0001da34; */game/bg_pmove.o                 (.text .text.*);
+    . = 0x0008a74c - 0x0001da34; */game/bg_slidemove.o             (.text .text.*);
 
     *(.text .text.*);
   } :text =0x90909090
@@ -115,6 +116,7 @@ SECTIONS
     . = 0x000cdf20 - 0x000bdf40; */game/bg_lib.o       (.rodata);
     . = 0x000cdf60 - 0x000bdf40; */game/bg_misc.o      (.rodata);
     . = 0x000cf890 - 0x000bdf40; */game/bg_pmove.o     (.rodata);
+    . = 0x000cfa28 - 0x000bdf40; */game/bg_slidemove.o (.rodata);
 
     *(.rodata);
   } :text
@@ -149,6 +151,7 @@ SECTIONS
     . = 0x000db27c - 0x000d76e0; */game/bg_lib.o                   (.data .data.*);
     . = 0x000db280 - 0x000d76e0; */game/bg_misc.o                  (.data .data.*);
     . = 0x000dbb8c - 0x000d76e0; */game/bg_pmove.o                 (.data .data.*);
+    . = 0x000dbbc0 - 0x000d76e0; */game/bg_slidemove.o             (.data .data.*);
 
     *(.data .data.*);
   } :data
@@ -207,6 +210,7 @@ SECTIONS
     . = 0x000e3660 - 0x000dfc20; */game/bg_lib.o                   (.bss);
     . = 0x000e3660 - 0x000dfc20; */game/bg_misc.o                  (.bss);
     . = 0x000e3660 - 0x000dfc20; */game/bg_pmove.o                 (.bss);
+    . = 0x000e3660 - 0x000dfc20; */game/bg_slidemove.o             (.bss);
 
     *(.bss);
     *(COMMON);

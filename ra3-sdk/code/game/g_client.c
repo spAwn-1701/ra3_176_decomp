@@ -571,11 +571,6 @@ The game can override any of the settings and call trap_SetUserinfo
 if desired.
 ============
 */
-
-// FIXME remove once g_db.c added
-void DB_UpdateAliases(gentity_t *ent);
-//
-
 void ClientUserinfoChanged( int clientNum ) {
 	gentity_t *ent;
 	char	*s;

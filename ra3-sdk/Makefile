@@ -114,6 +114,7 @@ GAME_SRC = \
   $(SRCDIR)/game/g_client.c \
   $(SRCDIR)/game/g_cmds.c \
   $(SRCDIR)/game/g_combat.c \
+  $(SRCDIR)/game/g_db.c \
   $(SRCDIR)/game/g_items.c \
   $(SRCDIR)/game/g_main.c \
   $(SRCDIR)/game/g_mem.c \

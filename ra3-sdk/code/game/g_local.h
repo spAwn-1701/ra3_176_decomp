@@ -562,7 +562,9 @@ typedef struct {
 	int			restarting;
 	int			voteFailTime;
 	int			lastTimeLeftUpdate;
-	void		*db;
+#ifndef Q3_VM
+	sqlite		*db;
+#endif
 	gentity_t	*topShots[WP_NUM_WEAPONS][MAX_CLIENTS];
 	int			frameStartTime;
 } level_locals_t;
@@ -897,6 +899,14 @@ void Cmd_TeamCaptain_f( gentity_t *ent );
 void Cmd_TeamKick_f( gentity_t *ent );
 void Cmd_TeamLock_f( gentity_t *ent );
 void Cmd_TeamUnlock_f( gentity_t *ent );
+
+//
+// g_db.c
+//
+#ifndef Q3_VM
+int G_OpenDB(sqlite **db);
+void DB_UpdateAliases(gentity_t *ent);
+#endif
 
 // ai_main.c
 

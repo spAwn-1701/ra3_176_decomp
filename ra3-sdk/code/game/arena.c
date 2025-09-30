@@ -10,12 +10,6 @@ extern void G_BalanceTeams(int arenaNum);
 extern void G_Pause( int arenaNum );
 extern void G_UnPause( int arenaNum );
 
-extern void G_ResetTimeouts( int teamNum );
-
-extern int G_IsCoaching( gentity_t *ent );
-extern void G_ResetTimeouts( int teamNum );
-extern void G_NewTeamCaptain( gentity_t *ent );
-
 extern void send_end_of_round_stats( int arenaNum );
 extern void G_SendStatsupdate( gentity_t *ent, int unknown );
 //

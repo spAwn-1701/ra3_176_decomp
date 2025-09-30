@@ -883,6 +883,20 @@ void load_config(int numArenas);
 const char *get_next_map(const char *map);
 void load_motd();
 
+//
+// g_captain.c
+//
+void G_ResetTimeouts( int teamNum );
+void G_NewTeamCaptain( gentity_t *ent );
+
+void Cmd_TeamName_f( gentity_t *ent );
+void Cmd_TeamMute_f( gentity_t *ent );
+void Cmd_TeamUnmute_f( gentity_t *ent );
+void Cmd_TeamCaptain_f( gentity_t *ent );
+void Cmd_TeamKick_f( gentity_t *ent );
+void Cmd_TeamLock_f( gentity_t *ent );
+void Cmd_TeamUnlock_f( gentity_t *ent );
+
 // ai_main.c
 
 //some maxs

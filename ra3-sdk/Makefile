@@ -110,6 +110,7 @@ GAME_SRC = \
   $(SRCDIR)/game/g_active.c \
   $(SRCDIR)/game/g_arenas.c \
   $(SRCDIR)/game/g_bot.c \
+  $(SRCDIR)/game/g_captain.c \
   $(SRCDIR)/game/g_client.c \
   $(SRCDIR)/game/g_cmds.c \
   $(SRCDIR)/game/g_combat.c \

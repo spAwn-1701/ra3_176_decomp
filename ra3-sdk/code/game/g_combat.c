@@ -5,8 +5,6 @@
 #include "g_local.h"
 
 // FIXME stubs
-gentity_t *LaunchItem( gitem_t *item, vec3_t origin, vec3_t velocity );
-
 void G_SetStat( gentity_t *ent, int stat, int value );
 void G_SendEorSingle( gentity_t *ent );
 

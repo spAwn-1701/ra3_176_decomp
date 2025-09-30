@@ -617,6 +617,7 @@ void Think_Weapon (gentity_t *ent);
 int ArmorIndex (gentity_t *ent);
 void	Add_Ammo (gentity_t *ent, int weapon, int count);
 void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace);
+gentity_t *LaunchItem( gitem_t *item, vec3_t origin, vec3_t velocity );
 
 void ClearRegisteredItems( void );
 void RegisterItem( gitem_t *item );

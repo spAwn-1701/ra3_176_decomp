@@ -295,12 +295,14 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace) {
 	if (other->health < 1)
 		return;		// dead people can't pickup
 
+	if ( ent->target_ent && ent->target_ent != other ) {
+		return;
+	}
+
 	// the same pickup rules are used for client side and server side
 	if ( !BG_CanItemBeGrabbed( &ent->s, &other->client->ps ) ) {
 		return;
 	}
-
-	G_LogPrintf( "Item: %i %s\n", other->s.number, ent->item->classname );
 
 	// call the item-specific pickup function
 	switch( ent->item->giType ) {
@@ -588,9 +590,23 @@ ClearRegisteredItems
 void ClearRegisteredItems( void ) {
 	memset( itemRegistered, 0, sizeof( itemRegistered ) );
 
-	// players always start with the base weapon
 	RegisterItem( BG_FindItemForWeapon( WP_MACHINEGUN ) );
 	RegisterItem( BG_FindItemForWeapon( WP_GAUNTLET ) );
+	RegisterItem( BG_FindItemForWeapon( WP_GRAPPLING_HOOK ) );
+	RegisterItem( BG_FindItemForWeapon( WP_GRENADE_LAUNCHER ) );
+	RegisterItem( BG_FindItemForWeapon( WP_LIGHTNING ) );
+	RegisterItem( BG_FindItemForWeapon( WP_PLASMAGUN ) );
+	RegisterItem( BG_FindItemForWeapon( WP_RAILGUN ) );
+	RegisterItem( BG_FindItemForWeapon( WP_ROCKET_LAUNCHER ) );
+	RegisterItem( BG_FindItemForWeapon( WP_SHOTGUN ) );
+	RegisterItem( BG_FindItemForWeapon( WP_BFG ) );
+
+	if ( g_funMode.integer ) {
+		RegisterItem( BG_FindItem( "5 Health" ) );
+		RegisterItem( BG_FindItem( "25 Health" ) );
+		RegisterItem( BG_FindItem( "50 Health" ) );
+		RegisterItem( BG_FindItem( "Armor Shard" ) );
+	}
 }
 
 /*

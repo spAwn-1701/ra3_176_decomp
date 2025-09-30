@@ -3,6 +3,10 @@
 
 // g_public.h -- game module information visible to server
 
+#define	GAME_MAJOR_VERSION	1
+#define	GAME_MINOR_VERSION	7
+#define	GAME_PATCH_VERSION	6
+
 #define	GAME_API_VERSION	8
 
 // entity->svFlags

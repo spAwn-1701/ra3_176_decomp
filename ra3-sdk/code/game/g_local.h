@@ -725,7 +725,7 @@ qboolean SpotWouldTelefrag( gentity_t *spot );
 //
 qboolean	ConsoleCommand( void );
 void G_ProcessIPBans(void);
-qboolean G_FilterPacket (char *from);
+char *G_FilterPacket (char *from);
 
 //
 // g_weapon.c
@@ -764,6 +764,7 @@ void QDECL G_Error( const char *fmt, ... );
 char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot );
 void ClientUserinfoChanged( int clientNum );
 void ClientDisconnect( int clientNum );
+void ClientPreBegin( int clientNum );
 void ClientBegin( int clientNum );
 void ClientCommand( int clientNum );
 

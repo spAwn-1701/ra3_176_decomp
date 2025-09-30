@@ -126,7 +126,7 @@ static void UpdateIPBans (void)
 G_FilterPacket
 =================
 */
-qboolean G_FilterPacket (char *from)
+char *G_FilterPacket (char *from)
 {
 	int		i;
 	unsigned	in;
@@ -150,9 +150,9 @@ qboolean G_FilterPacket (char *from)
 
 	for (i=0 ; i<numIPFilters ; i++)
 		if ( (in & ipFilters[i].mask) == ipFilters[i].compare)
-			return g_filterBan.integer != 0;
+			return g_filterBan.integer != 0 ? "You are banned from this server." : "";
 
-	return g_filterBan.integer == 0;
+	return g_filterBan.integer == 0 ? "You are not allowed on this server." : "";
 }
 
 /*

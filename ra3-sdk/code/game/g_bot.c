@@ -532,7 +532,7 @@ qboolean G_BotConnect( int clientNum, qboolean restart ) {
 G_AddBot
 ===============
 */
-static void G_AddBot( const char *name, int skill, const char *team, int delay, char *altname) {
+static void G_AddBot( const char *name, int skill, const char *team, int arena, int delay, char *altname) {
 	int				clientNum;
 	char			*botinfo;
 	gentity_t		*bot;
@@ -627,6 +627,7 @@ static void G_AddBot( const char *name, int skill, const char *team, int delay, 
 	Info_SetValueForKey( userinfo, "characterfile", Info_ValueForKey( botinfo, "aifile" ) );
 	Info_SetValueForKey( userinfo, "skill", va( "%i", skill ) );
 	Info_SetValueForKey( userinfo, "team", team );
+	Info_SetValueForKey( userinfo, "a", va( "%i", arena ) );
 
 	bot = &g_entities[ clientNum ];
 	bot->r.svFlags |= SVF_BOT;
@@ -655,8 +656,11 @@ Svcmd_AddBot_f
 ===============
 */
 void Svcmd_AddBot_f( void ) {
-	int				skill;
+	static const char *usage = "Usage: Addbot <botname> [skill 1-4] [team] [arena] [msec delay] [altname]\n";
+
+	int			skill;
 	int				delay;
+	int				arena;
 	char			name[MAX_TOKEN_CHARS];
 	char			altname[MAX_TOKEN_CHARS];
 	char			string[MAX_TOKEN_CHARS];
@@ -670,7 +674,7 @@ void Svcmd_AddBot_f( void ) {
 	// name
 	trap_Argv( 1, name, sizeof( name ) );
 	if ( !name[0] ) {
-		trap_Printf( "Usage: Addbot <botname> [skill 1-4] [team] [msec delay] [altname]\n" );
+		trap_Printf( usage );
 		return;
 	}
 
@@ -686,8 +690,16 @@ void Svcmd_AddBot_f( void ) {
 	// team
 	trap_Argv( 3, team, sizeof( team ) );
 
-	// delay
+	// arena
 	trap_Argv( 4, string, sizeof( string ) );
+	if ( !string[0] ) {
+		trap_Printf( usage );
+		return;
+	}
+	arena = atoi( string );
+
+	// delay
+	trap_Argv( 5, string, sizeof( string ) );
 	if ( !string[0] ) {
 		delay = 0;
 	}
@@ -696,9 +708,9 @@ void Svcmd_AddBot_f( void ) {
 	}
 
 	// alternative name
-	trap_Argv( 5, altname, sizeof( altname ) );
+	trap_Argv( 6, altname, sizeof( altname ) );
 
-	G_AddBot( name, skill, team, delay, altname );
+	G_AddBot( name, skill, team, arena, delay, altname );
 
 	// if this was issued during gameplay and we are playing locally,
 	// go ahead and load the bot's media immediately

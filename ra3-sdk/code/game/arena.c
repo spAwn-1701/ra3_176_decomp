@@ -1,10 +1,6 @@
 #include "g_local.h"
 
 // FIXME temporary stubs
-extern void CountReadyClients( int *param_1, int *param_2, int *param_3, int *param_4, int arenaNum );
-extern void SetClientReadyMasks( int readyMask, int arenaNum );
-extern void ClearClientReady( int arenaNum );
-
 extern void G_BalanceTeams(int arenaNum);
 
 extern void G_Pause( int arenaNum );

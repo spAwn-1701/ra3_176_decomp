@@ -20,9 +20,6 @@ int usleep(__useconds_t us);
 
 //==================================================================
 
-// the "gameversion" client command will print this plus compile date
-#define	GAMEVERSION	"RA3 1.76"
-
 #define BODY_QUEUE_SIZE		8
 
 #define INFINITE			1000000
@@ -765,6 +762,11 @@ void DeathmatchScoreboardMessage (gentity_t *client);
 void FindIntermissionPoint( void );
 void G_RunThink (gentity_t *ent);
 void QDECL G_LogPrintf( const char *fmt, ... );
+
+void CountReadyClients( int *param_1, int *param_2, int *param_3, int *param_4, int arenaNum );
+void SetClientReadyMasks( int readyMask, int arenaNum );
+void ClearClientReady( int arenaNum );
+
 void SendScoreboardMessageToAllClients( void );
 void QDECL G_Printf( const char *fmt, ... );
 void QDECL G_Error( const char *fmt, ... );

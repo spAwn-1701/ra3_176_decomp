@@ -284,19 +284,23 @@ gentity_t *fire_plasma (gentity_t *self, vec3_t start, vec3_t dir) {
 fire_grenade
 =================
 */
-gentity_t *fire_grenade (gentity_t *self, vec3_t start, vec3_t dir) {
+gentity_t *fire_grenade (gentity_t *self, vec3_t start, vec3_t dir, int thinkDelay, int bounceHalf) {
 	gentity_t	*bolt;
 
 	VectorNormalize (dir);
 
 	bolt = G_Spawn();
 	bolt->classname = "grenade";
-	bolt->nextthink = level.time + 2500;
+	bolt->nextthink = level.time + thinkDelay;
 	bolt->think = G_ExplodeMissile;
 	bolt->s.eType = ET_MISSILE;
 	bolt->r.svFlags = SVF_USE_CURRENT_ORIGIN;
 	bolt->s.weapon = WP_GRENADE_LAUNCHER;
-	bolt->s.eFlags = EF_BOUNCE_HALF;
+	if ( bounceHalf ) {
+		bolt->s.eFlags = EF_BOUNCE_HALF;
+	} else {
+		bolt->s.eFlags = 0;
+	}
 	bolt->r.ownerNum = self->s.number;
 	bolt->parent = self;
 	bolt->damage = 100;

@@ -139,6 +139,8 @@ void locateCamera( gentity_t *ent ) {
 	vec3_t		dir;
 	gentity_t	*target;
 	gentity_t	*owner;
+	vec3_t		ownerOrigin;
+	vec3_t		targetOrigin;
 
 	owner = G_PickTarget( ent->target );
 	if ( !owner ) {
@@ -158,18 +160,25 @@ void locateCamera( gentity_t *ent ) {
 	// clientNum holds the rotate offset
 	ent->s.clientNum = owner->s.clientNum;
 
-	VectorCopy( owner->s.origin, ent->s.origin2 );
+	BG_EvaluateTrajectory( &owner->s.pos, level.time, ownerOrigin );
+	VectorCopy( ownerOrigin, ent->s.origin2 );
 
 	// see if the portal_camera has a target
-	target = G_PickTarget( owner->target );
+	if ( ent->model && ent->model[0] ) {
+		target = G_PickTarget( ent->model );
+	} else {
+		target = G_PickTarget( owner->target );
+	}
+
 	if ( target ) {
-		VectorSubtract( target->s.origin, owner->s.origin, dir );
+		BG_EvaluateTrajectory( &target->s.pos, level.time, targetOrigin );
+		VectorSubtract( targetOrigin, ownerOrigin, dir );
 		VectorNormalize( dir );
 	} else {
 		G_SetMovedir( owner->s.angles, dir );
 	}
 
-	ent->s.eventParm = DirToByte( dir );
+	VectorCopy( dir, ent->s.angles );
 }
 
 /*QUAKED misc_portal_surface (0 0 1) (-8 -8 -8) (8 8 8)
@@ -243,7 +252,7 @@ void Use_Shooter( gentity_t *ent, gentity_t *other, gentity_t *activator ) {
 
 	switch ( ent->s.weapon ) {
 	case WP_GRENADE_LAUNCHER:
-		fire_grenade( ent, ent->s.origin, dir );
+		fire_grenade( ent, ent->s.origin, dir, DEFAULT_GRENADE_THINKDELAY, 1 );
 		break;
 	case WP_ROCKET_LAUNCHER:
 		fire_rocket( ent, ent->s.origin, dir );

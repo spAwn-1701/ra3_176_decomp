@@ -5,9 +5,6 @@
 #include "g_local.h"
 
 // FIXME stubs
-void G_SetStat( gentity_t *ent, int stat, int value );
-void G_SendEorSingle( gentity_t *ent );
-
 void G_UnTimeShiftClient( gentity_t *client );
 //
 

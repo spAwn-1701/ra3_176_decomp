@@ -928,6 +928,24 @@ void DB_UpdateAliases(gentity_t *ent);
 void httpServer();
 #endif
 
+//
+// g_stats.c
+//
+#ifndef Q3_VM
+void G_WriteSession( gclient_t *client );
+#endif
+
+void G_UpdateRanks( gentity_t *ent, int stat );
+void G_SetStat( gentity_t *ent, int stat, int value );
+void send_end_of_round_stats( int arenaNum );
+void G_SendEorSingle( gentity_t *ent );
+void G_SendStatsupdate( gentity_t *ent, int unknown );
+
+void Cmd_TopShots_f( gentity_t *ent );
+void Cmd_AccShots_f( gentity_t *ent );
+void Cmd_StatsAll_f( gentity_t *ent, gentity_t *target );
+void Cmd_Stats_f( gentity_t *ent, int unknown );
+
 // ai_main.c
 
 //some maxs

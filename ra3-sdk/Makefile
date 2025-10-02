@@ -124,6 +124,7 @@ GAME_SRC = \
   $(SRCDIR)/game/g_mover.c \
   $(SRCDIR)/game/g_session.c \
   $(SRCDIR)/game/g_spawn.c \
+  $(SRCDIR)/game/g_stats.c \
   $(SRCDIR)/game/g_svcmds.c \
   $(SRCDIR)/game/g_syscalls.c \
   $(SRCDIR)/game/g_target.c \

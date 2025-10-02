@@ -7,9 +7,6 @@ void G_Pause( int arenaNum );
 void G_UnPause( int arenaNum );
 
 int Target_GetLocation( gentity_t *ent, char *out, int outSize );
-
-void Cmd_TopShots_f( gentity_t *ent );
-void Cmd_Stats_f( gentity_t *ent, int unknown );
 //
 
 /*

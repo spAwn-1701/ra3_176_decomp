@@ -1024,11 +1024,6 @@ call trap_DropClient(), which will call this and do
 server system housekeeping.
 ============
 */
-
-// FIXME remove once g_stats.c is added
-void G_WriteSession( gclient_t *client);
-//
-
 void ClientDisconnect( int clientNum ) {
 	gentity_t	*ent;
 	gentity_t	*tent;

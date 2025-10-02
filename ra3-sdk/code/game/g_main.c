@@ -10,10 +10,6 @@ void G_InitThreads();
 void G_DestroyMutexes();
 void G_ExitThreads();
 
-void G_WriteSession( gclient_t *client );
-
-void Cmd_Stats_f( gentity_t *ent, int unknown );
-
 void G_TimeShiftAllClients( int time, gentity_t *skip );
 void G_UnTimeShiftAllClients( gentity_t *skip );
 //

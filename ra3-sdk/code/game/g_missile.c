@@ -2,11 +2,6 @@
 //
 #include "g_local.h"
 
-// FIXME stubs
-void G_UpdateRanks( gentity_t *ent, int stat );
-void G_SetStat( gentity_t *ent, int stat, int value );
-//
-
 #define	MISSILE_PRESTEP_TIME	50
 
 /*

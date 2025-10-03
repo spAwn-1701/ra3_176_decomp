@@ -429,11 +429,24 @@ Kills all entities that would touch the proposed new positioning
 of ent.  Ent should be unlinked before calling this!
 =================
 */
-int G_KillBox (gentity_t *ent) {
+int G_KillBox( gentity_t *ent ) {
 	int			i, num;
 	int			touch[MAX_GENTITIES];
 	gentity_t	*hit;
 	vec3_t		mins, maxs;
+	qboolean	tf;
+
+	tf = qfalse;
+
+	if ( !ent->client ) {
+		return 0;
+	}
+
+	if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR ) {
+		return 0;
+	}
+
+	ent->client->telefragBounceEndFrame = 0;
 
 	VectorAdd( ent->client->ps.origin, ent->r.mins, mins );
 	VectorAdd( ent->client->ps.origin, ent->r.maxs, maxs );
@@ -441,16 +454,21 @@ int G_KillBox (gentity_t *ent) {
 
 	for (i=0 ; i<num ; i++) {
 		hit = &g_entities[touch[i]];
-		if ( !hit->client ) {
-			continue;
-		}
 
-		// nail it
-		G_Damage ( hit, ent, ent, NULL, NULL,
-			100000, DAMAGE_NO_PROTECTION, MOD_TELEFRAG);
+		if ( hit->client && !hit->takedamage && hit->client->sess.sessionTeam != TEAM_SPECTATOR ) {
+			G_Printf( "TF: %s on %s\n", ent->client->pers.netname, hit->client->pers.netname );
+
+			set_telefrag_dir( ent, hit );
+			telefrag_bounce_client( ent );
+			telefrag_bounce_client( hit );
+
+			tf = qtrue;
+		} else {
+			G_Damage( hit, ent, ent, NULL, NULL, 100000, DAMAGE_NO_PROTECTION, MOD_TELEFRAG );
+		}
 	}
 
-	return 0;
+	return tf;
 }
 
 //==============================================================================

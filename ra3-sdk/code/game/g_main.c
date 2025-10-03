@@ -4,12 +4,6 @@
 #include "g_local.h"
 
 // FIXME stubs
-void G_InitMutexes();
-void G_InitThreads();
-
-void G_DestroyMutexes();
-void G_ExitThreads();
-
 void G_TimeShiftAllClients( int time, gentity_t *skip );
 void G_UnTimeShiftAllClients( gentity_t *skip );
 //
@@ -26,16 +20,6 @@ static const char *tblCreate[NUM_TABLES] = {
 #endif
 
 level_locals_t	level;
-
-typedef struct {
-	vmCvar_t	*vmCvar;
-	char		*cvarName;
-	char		*defaultString;
-	int			cvarFlags;
-	int			modificationCount;  // for tracking changes
-	qboolean	trackChange;	// track this variable, and announce if changed
-	pthread_mutex_t	mutex;
-} cvarTable_t;
 
 gentity_t		g_entities[MAX_GENTITIES];
 gclient_t		g_clients[MAX_CLIENTS];

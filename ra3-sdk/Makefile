@@ -129,6 +129,7 @@ GAME_SRC = \
   $(SRCDIR)/game/g_syscalls.c \
   $(SRCDIR)/game/g_target.c \
   $(SRCDIR)/game/g_team.c \
+  $(SRCDIR)/game/g_thread.c \
   $(SRCDIR)/game/g_trigger.c \
   $(SRCDIR)/game/g_utils.c \
   $(SRCDIR)/game/g_weapon.c \

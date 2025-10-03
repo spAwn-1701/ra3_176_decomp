@@ -4,18 +4,6 @@
 
 #include "../httpd/httpd.h"
 
-// FIXME stubs
-extern int threadQuit;
-
-extern pthread_mutex_t threadQuitMutex;
-
-int G_GetCvarMutex(vmCvar_t *cvar);
-int G_ReleaseCvarMutex(vmCvar_t *cvar);
-
-int G_GetMutex(pthread_mutex_t *m);
-int G_ReleaseMutex(pthread_mutex_t *m);
-//
-
 sqlite *httpdDB = NULL;
 
 int httpAuthFlags( httpd *server, char *realm ) {

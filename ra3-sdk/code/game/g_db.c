@@ -2,11 +2,6 @@
 
 #ifndef Q3_VM
 
-// FIXME stubs
-int G_GetCvarMutex(vmCvar_t *cvar);
-int G_ReleaseCvarMutex(vmCvar_t *cvar);
-//
-
 void DB_UpdateAliases( gentity_t *ent ) {
 	char *err;
 	int rows;

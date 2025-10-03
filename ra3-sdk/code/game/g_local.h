@@ -764,6 +764,21 @@ void DeathmatchScoreboardMessage (gentity_t *client);
 //
 // g_main.c
 //
+typedef struct {
+	vmCvar_t	*vmCvar;
+	char		*cvarName;
+	char		*defaultString;
+	int			cvarFlags;
+	int			modificationCount;  // for tracking changes
+	qboolean	trackChange;	// track this variable, and announce if changed
+#ifndef Q3_VM
+	pthread_mutex_t	mutex;
+#endif
+} cvarTable_t;
+
+extern cvarTable_t gameCvarTable[];
+extern int gameCvarTableSize;
+
 void FindIntermissionPoint( void );
 void G_RunThink (gentity_t *ent);
 void QDECL G_LogPrintf( const char *fmt, ... );
@@ -949,6 +964,30 @@ void Cmd_TopShots_f( gentity_t *ent );
 void Cmd_AccShots_f( gentity_t *ent );
 void Cmd_StatsAll_f( gentity_t *ent, gentity_t *target );
 void Cmd_Stats_f( gentity_t *ent, int unknown );
+
+//
+// g_thread.c
+//
+#ifndef Q3_VM
+extern int threadQuit;
+
+extern pthread_mutex_t gPrintMutex;
+extern pthread_mutex_t gLogPrintMutex;
+extern pthread_mutex_t runningThreadsMutex;
+extern pthread_mutex_t threadQuitMutex;
+
+void G_InitThreads();
+void G_ExitThreads();
+
+void G_InitMutexes();
+void G_DestroyMutexes();
+
+int G_GetCvarMutex( vmCvar_t *cvar );
+int G_ReleaseCvarMutex( vmCvar_t *cvar );
+
+int G_GetMutex( pthread_mutex_t *m );
+int G_ReleaseMutex( pthread_mutex_t *m );
+#endif
 
 // ai_main.c
 

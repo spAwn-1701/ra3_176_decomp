@@ -4,10 +4,6 @@
 
 #include "g_local.h"
 
-// FIXME stubs
-void G_UnTimeShiftClient( gentity_t *client );
-//
-
 /*
 ============
 AddScore

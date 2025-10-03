@@ -3,11 +3,6 @@
 
 #include "g_local.h"
 
-// FIXME stubs
-void G_TimeShiftAllClients( int time, gentity_t *skip );
-void G_UnTimeShiftAllClients( gentity_t *skip );
-//
-
 #ifndef Q3_VM
 
 static const char *tblCreate[NUM_TABLES] = {

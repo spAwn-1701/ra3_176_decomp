@@ -131,6 +131,7 @@ GAME_SRC = \
   $(SRCDIR)/game/g_team.c \
   $(SRCDIR)/game/g_thread.c \
   $(SRCDIR)/game/g_trigger.c \
+  $(SRCDIR)/game/g_unlagged.c \
   $(SRCDIR)/game/g_utils.c \
   $(SRCDIR)/game/g_weapon.c \
   $(SRCDIR)/game/q_math.c \

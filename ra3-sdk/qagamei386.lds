@@ -106,6 +106,7 @@ SECTIONS
     . = 0x000a90f4 - 0x0001da34; */game/g_spawn.o                  (.text .text.*);
     . = 0x000a9c24 - 0x0001da34; */game/g_stats.o                  (.text .text.*);
     . = 0x000acba0 - 0x0001da34; */game/g_svcmds.o                 (.text .text.*);
+    . = 0x000ae064 - 0x0001da34; */game/g_syscalls.o               (.text .text.*);
 
     *(.text .text.*);
   } :text =0x90909090
@@ -155,6 +156,7 @@ SECTIONS
     . = 0x000d3f20 - 0x000bdf40; */game/g_spawn.o      (.rodata);
     . = 0x000d4540 - 0x000bdf40; */game/g_stats.o      (.rodata);
     . = 0x000d4ca0 - 0x000bdf40; */game/g_svcmds.o     (.rodata);
+    . = 0x000d5358 - 0x000bdf40; */game/g_syscalls.o   (.rodata);
 
     *(.rodata);
   } :text
@@ -209,6 +211,7 @@ SECTIONS
     . = 0x000dd660 - 0x000d76e0; */game/g_spawn.o                  (.data .data.*);
     . = 0x000dd968 - 0x000d76e0; */game/g_stats.o                  (.data .data.*);
     . = 0x000dd97c - 0x000d76e0; */game/g_svcmds.o                 (.data .data.*);
+    . = 0x000dd98c - 0x000d76e0; */game/g_syscalls.o               (.data .data.*);
 
     *(.data .data.*);
   } :data
@@ -287,6 +290,7 @@ SECTIONS
     . = 0x00125b60 - 0x000dfc20; */game/g_spawn.o                  (.bss);
     . = 0x00125b60 - 0x000dfc20; */game/g_stats.o                  (.bss);
     . = 0x00125b60 - 0x000dfc20; */game/g_svcmds.o                 (.bss);
+    . = 0x00127c80 - 0x000dfc20; */game/g_syscalls.o               (.bss);
 
     *(.bss);
     *(COMMON);

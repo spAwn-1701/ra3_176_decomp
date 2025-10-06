@@ -86,6 +86,8 @@ static short	(*_BigShort) (short l);
 static short	(*_LittleShort) (short l);
 static int		(*_BigLong) (int l);
 static int		(*_LittleLong) (int l);
+static qint64	( *_BigLong64 )( qint64 l );
+static qint64	( *_LittleLong64 )( qint64 l );
 static float	(*_BigFloat) (float l);
 static float	(*_LittleFloat) (float l);
 
@@ -93,6 +95,8 @@ short	BigShort(short l){return _BigShort(l);}
 short	LittleShort(short l) {return _LittleShort(l);}
 int		BigLong (int l) {return _BigLong(l);}
 int		LittleLong (int l) {return _LittleLong(l);}
+qint64	BigLong64( qint64 l ) {return _BigLong64( l );}
+qint64	LittleLong64( qint64 l ) {return _LittleLong64( l );}
 float	BigFloat (float l) {return _BigFloat(l);}
 float	LittleFloat (float l) {return _LittleFloat(l);}
 
@@ -126,6 +130,25 @@ int    LongSwap (int l)
 int	LongNoSwap (int l)
 {
 	return l;
+}
+
+qint64 Long64Swap( qint64 ll ) {
+	qint64 result;
+
+	result.b0 = ll.b7;
+	result.b1 = ll.b6;
+	result.b2 = ll.b5;
+	result.b3 = ll.b4;
+	result.b4 = ll.b3;
+	result.b5 = ll.b2;
+	result.b6 = ll.b1;
+	result.b7 = ll.b0;
+
+	return result;
+}
+
+qint64 Long64NoSwap( qint64 ll ) {
+	return ll;
 }
 
 float FloatSwap (float f)
@@ -166,6 +189,8 @@ void Swap_Init (void)
 		_LittleShort = ShortNoSwap;
 		_BigLong = LongSwap;
 		_LittleLong = LongNoSwap;
+		_BigLong64 = Long64Swap;
+		_LittleLong64 = Long64NoSwap;
 		_BigFloat = FloatSwap;
 		_LittleFloat = FloatNoSwap;
 	}
@@ -175,6 +200,8 @@ void Swap_Init (void)
 		_LittleShort = ShortSwap;
 		_BigLong = LongNoSwap;
 		_LittleLong = LongSwap;
+		_BigLong64 = Long64NoSwap;
+		_LittleLong64 = Long64Swap;
 		_BigFloat = FloatNoSwap;
 		_LittleFloat = FloatSwap;
 	}
@@ -191,11 +218,13 @@ PARSING
 */
 
 static	char	com_token[MAX_TOKEN_CHARS];
+static	char	com_parsename[MAX_TOKEN_CHARS];
 static	int		com_lines;
 
-void COM_BeginParseSession( void )
+void COM_BeginParseSession( const char *name )
 {
 	com_lines = 0;
+	Com_sprintf( com_parsename, sizeof( com_parsename ), "%s", name );
 }
 
 int COM_GetCurrentParseLine( void )
@@ -208,6 +237,29 @@ char *COM_Parse( char **data_p )
 	return COM_ParseExt( data_p, qtrue );
 }
 
+void COM_ParseError( char *format, ... )
+{
+	va_list argptr;
+	static char string[4096];
+
+	va_start( argptr, format );
+	vsprintf( string, format, argptr );
+	va_end( argptr );
+
+	Com_Printf( "ERROR: %s, line %d: %s\n", com_parsename, com_lines, string );
+}
+
+void COM_ParseWarning( char *format, ... )
+{
+	va_list argptr;
+	static char string[4096];
+
+	va_start( argptr, format );
+	vsprintf( string, format, argptr );
+	va_end( argptr );
+
+	Com_Printf( "WARNING: %s, line %d: %s\n", com_parsename, com_lines, string );
+}
 
 /*
 ==============
@@ -236,6 +288,75 @@ static char *SkipWhitespace( char *data, qboolean *hasNewLines ) {
 	}
 
 	return data;
+}
+
+int COM_Compress( char *data_p )
+{
+	char *in, *out;
+	int c;
+	qboolean newline = qfalse, whitespace = qfalse;
+
+	in = out = data_p;
+	if (in) {
+		while ((c = *in) != 0) {
+			// skip double slash comments
+			if ( c == '/' && in[1] == '/' ) {
+				while (*in && *in != '\n') {
+					in++;
+				}
+			// skip /* */ comments
+			} else if ( c == '/' && in[1] == '*' ) {
+				while ( *in && ( *in != '*' || in[1] != '/' ) )
+					in++;
+				if ( *in )
+					in += 2;
+				// record when we hit a newline
+			} else if ( c == '\n' || c == '\r' ) {
+				newline = qtrue;
+				in++;
+				// record when we hit whitespace
+			} else if ( c == ' ' || c == '\t') {
+				whitespace = qtrue;
+				in++;
+				// an actual token
+			} else {
+				// if we have a pending newline, emit it (and it counts as whitespace)
+				if (newline) {
+					*out++ = '\n';
+					newline = qfalse;
+					whitespace = qfalse;
+				} if (whitespace) {
+					*out++ = ' ';
+					whitespace = qfalse;
+				}
+
+				// copy quoted strings unmolested
+				if (c == '"') {
+					*out++ = c;
+					in++;
+					while (1) {
+						c = *in;
+						if (c && c != '"') {
+							*out++ = c;
+							in++;
+						} else {
+							break;
+						}
+					}
+					if (c == '"') {
+						*out++ = c;
+						in++;
+					}
+				} else {
+					*out = c;
+					out++;
+					in++;
+				}
+			}
+		}
+	}
+	*out = 0;
+	return out - data_p;
 }
 
 char *COM_ParseExt( char **data_p, qboolean allowLineBreaks )
@@ -275,12 +396,15 @@ char *COM_ParseExt( char **data_p, qboolean allowLineBreaks )
 		// skip double slash comments
 		if ( c == '/' && data[1] == '/' )
 		{
-			while (*data && *data != '\n')
+			data += 2;
+			while (*data && *data != '\n') {
 				data++;
+			}
 		}
 		// skip /* */ comments
 		else if ( c=='/' && data[1] == '*' ) 
 		{
+			data += 2;
 			while ( *data && ( *data != '*' || data[1] != '/' ) ) 
 			{
 				data++;
@@ -564,6 +688,9 @@ Safe strncpy that ensures a trailing zero
 =============
 */
 void Q_strncpyz( char *dest, const char *src, int destsize ) {
+	if ( !dest ) {
+		Com_Error( ERR_FATAL, "Q_strncpyz: NULL dest" );
+	}
 	if ( !src ) {
 		Com_Error( ERR_FATAL, "Q_strncpyz: NULL src" );
 	}
@@ -577,7 +704,17 @@ void Q_strncpyz( char *dest, const char *src, int destsize ) {
                  
 int Q_stricmpn (const char *s1, const char *s2, int n) {
 	int		c1, c2;
-	
+
+	if ( s1 == NULL ) {
+		if ( s2 == NULL ) {
+			return 0;
+		} else {
+			return -1;
+		}
+	} else if ( s2 == NULL ) {
+		return 1;
+	}
+
 	do {
 		c1 = *s1++;
 		c2 = *s2++;
@@ -622,7 +759,7 @@ int Q_strncmp (const char *s1, const char *s2, int n) {
 }
 
 int Q_stricmp (const char *s1, const char *s2) {
-	return Q_stricmpn (s1, s2, 99999);
+	return !s1 || !s2 ? -1 : Q_stricmpn (s1, s2, 99999);
 }
 
 
@@ -711,7 +848,6 @@ const char *Q_StaticClean( const char *string ) {
 	Q_strncpyz( buf, string, sizeof( buf ) );
 	return Q_CleanStr( buf );
 }
-
 
 void QDECL Com_sprintf( char *dest, int size, const char *fmt, ...) {
 	int		len;
@@ -1053,7 +1189,8 @@ void Info_SetValueForKey( char *s, const char *key, const char *value ) {
 		return;
 	}
 
-	strcat (s, newi);
+	strcat (newi, s);
+	strcpy (s, newi);
 }
 
 /*

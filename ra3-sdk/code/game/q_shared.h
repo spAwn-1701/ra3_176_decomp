@@ -345,7 +345,7 @@ extern	vec4_t		colorMdGrey;
 extern	vec4_t		colorDkGrey;
 
 #define Q_COLOR_ESCAPE	'^'
-#define Q_IsColorString(p)	( p && *(p) == Q_COLOR_ESCAPE && *((p)+1) && *((p)+1) != Q_COLOR_ESCAPE )
+#define Q_IsColorString(p)	( p && *(p) == Q_COLOR_ESCAPE && *((p)+1) && *((p)+1) != Q_COLOR_ESCAPE  && *((p)+1) >= COLOR_BLACK && *((p)+1) <= COLOR_WHITE )
 
 #define COLOR_BLACK		'0'
 #define COLOR_RED		'1'
@@ -514,9 +514,12 @@ char	*COM_SkipPath( char *pathname );
 void	COM_StripExtension( const char *in, char *out );
 void	COM_DefaultExtension( char *path, int maxSize, const char *extension );
 
-void	COM_BeginParseSession( void );
+void	COM_BeginParseSession( const char *name );
 int		COM_GetCurrentParseLine( void );
 char	*COM_Parse( char **data_p );
+void	COM_ParseError( char *format, ... );
+void	COM_ParseWarning( char *format, ... );
+int		COM_Compress( char *data_p );
 char	*COM_ParseExt( char **data_p, qboolean allowLineBreak );
 //int		COM_ParseInfos( char *buf, int max, char infos[][MAX_INFO_STRING] );
 
@@ -576,10 +579,28 @@ const char *Q_StaticClean( const char *string );
 
 //=============================================
 
+// 64-bit integers for global rankings interface
+// implemented as a struct for qvm compatibility
+typedef struct
+{
+	byte b0;
+	byte b1;
+	byte b2;
+	byte b3;
+	byte b4;
+	byte b5;
+	byte b6;
+	byte b7;
+} qint64;
+
+//=============================================
+
 short	BigShort(short l);
 short	LittleShort(short l);
 int		BigLong (int l);
 int		LittleLong (int l);
+qint64	BigLong64( qint64 l );
+qint64	LittleLong64( qint64 l );
 float	BigFloat (float l);
 float	LittleFloat (float l);
 

@@ -115,6 +115,7 @@ SECTIONS
     . = 0x000b6a7c - 0x0001da34; */game/g_utils.o                  (.text .text.*);
     . = 0x000b7a3c - 0x0001da34; */game/g_weapon.o                 (.text .text.*);
     . = 0x000b9bb4 - 0x0001da34; */game/q_math.o                   (.text .text.*);
+    . = 0x000bbf6c - 0x0001da34; */game/q_shared.o                 (.text .text.*);
 
     *(.text .text.*);
   } :text =0x90909090
@@ -173,6 +174,7 @@ SECTIONS
     . = 0x000d5e20 - 0x000bdf40; */game/g_utils.o      (.rodata);
     . = 0x000d6058 - 0x000bdf40; */game/g_weapon.o     (.rodata);
     . = 0x000d6138 - 0x000bdf40; */game/q_math.o       (.rodata);
+    . = 0x000d62c0 - 0x000bdf40; */game/q_shared.o     (.rodata);
 
     *(.rodata);
   } :text
@@ -236,6 +238,7 @@ SECTIONS
     . = 0x000dda28 - 0x000d76e0; */game/g_utils.o                  (.data .data.*);
     . = 0x000dda68 - 0x000d76e0; */game/g_weapon.o                 (.data .data.*);
     . = 0x000dda80 - 0x000d76e0; */game/q_math.o                   (.data .data.*);
+    . = 0x000de398 - 0x000d76e0; */game/q_shared.o                 (.data .data.*);
 
     *(.data .data.*);
   } :data
@@ -323,6 +326,7 @@ SECTIONS
     . = 0x00127c80 - 0x000dfc20; */game/g_utils.o                  (.bss);
     . = 0x00127e20 - 0x000dfc20; */game/g_weapon.o                 (.bss);
     . = 0x00127e54 - 0x000dfc20; */game/q_math.o                   (.bss);
+    . = 0x00127e80 - 0x000dfc20; */game/q_shared.o                 (.bss);
 
     *(.bss);
     *(COMMON);

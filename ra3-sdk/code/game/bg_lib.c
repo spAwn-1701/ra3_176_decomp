@@ -189,6 +189,8 @@ loop:	SWAPINIT(a, es);
 
 //==================================================================================
 
+#define BITOP( a, b, op ) ( ( a )[(size_t)( b ) / ( 8 * sizeof *( a ) )] op( size_t ) 1 << ( (size_t)( b ) % ( 8 * sizeof *( a ) ) ) )
+
 size_t strlen( const char *string ) {
 	const char	*s;
 
@@ -259,13 +261,86 @@ char *strstr( const char *string, const char *strCharSet ) {
 	return (char *)0;
 }
 
+char *strchrnul( const char *s, int c ) {
+	c = (unsigned char)c;
+
+	if ( !c ) {
+		return (char *)s + strlen( s );
+	}
+
+	for ( ; *s && *(unsigned char *)s != c; s++ ) {}
+
+	return (char *)s;
+}
+
+size_t strcspn( const char *s, const char *c ) {
+	const char *a = s;
+	size_t byteset[32 / sizeof( size_t )];
+
+	if ( !c[0] || !c[1] ) {
+		return strchrnul( s, *c ) - a;
+	}
+
+	memset( byteset, 0, sizeof( byteset ) );
+
+	for ( ; *c && BITOP( byteset, *(unsigned char *)c, |= ); c++ ) {}
+	for ( ; *s && !BITOP( byteset, *(unsigned char *)s, & ); s++ ) {}
+
+	return s - a;
+}
+
+size_t strspn( const char *s, const char *c ) {
+	const char *a = s;
+	size_t byteset[32 / sizeof( size_t )] = { 0 };
+
+	if ( !c[0] ) {
+		return 0;
+	}
+
+	if ( !c[1] ) {
+		for ( ; *s == *c; s++ ) {
+		}
+		return s - a;
+	}
+
+	for ( ; *c && BITOP( byteset, *(unsigned char *)c, |= ); c++ ) {
+	}
+	for ( ; *s && BITOP( byteset, *(unsigned char *)s, & ); s++ ) {
+	}
+
+	return s - a;
+}
+
+char *strtok( char *s, const char *sep ) {
+	static char *p;
+
+	if ( !s && !( s = p ) ) {
+		return NULL;
+	}
+
+	s += strspn( s, sep );
+
+	if ( !*s ) {
+		return p = 0;
+	}
+
+	p = s + strcspn( s, sep );
+
+	if ( *p ) {
+		*p++ = 0;
+	} else {
+		p = 0;
+	}
+
+	return s;
+}
+
 int tolower( int c ) {
 	if ( c >= 'A' && c <= 'Z' ) {
 		c += 'a' - 'A';
 	}
 	return c;
 }
-
 
 int toupper( int c ) {
 	if ( c >= 'a' && c <= 'z' ) {

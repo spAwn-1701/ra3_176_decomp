@@ -40,6 +40,7 @@ int strcmp( const char *string1, const char *string2 );
 char *strchr( const char *string, int c );
 char *strstr( const char *string, const char *strCharSet );
 char *strncpy( char *strDest, const char *strSource, size_t count );
+char *strtok( char *s, const char *sep );
 int tolower( int c );
 int toupper( int c );
 

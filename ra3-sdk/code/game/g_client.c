@@ -754,6 +754,8 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 		}
 	}
 
+#ifndef Q3_VM
+	/* FIXME this breaks connecting when a different mod is active */
 	if ( !isBot ) {
 		sscanf(Info_ValueForKey( userinfo, "cg_version" ), "%d.%d %d", &major, &minor, &patch );
 
@@ -762,6 +764,7 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 			  major, minor, patch, GAME_MAJOR_VERSION, GAME_MINOR_VERSION, GAME_PATCH_VERSION );
 		}
 	}
+#endif
 
 	// they can connect
 	ent->client = level.clients + clientNum;

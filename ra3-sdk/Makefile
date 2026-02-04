@@ -128,6 +128,9 @@ Q3CPP = $(OBJDIR)/q3cpp$(BINEXT)
 Q3LCC = $(OBJDIR)/q3lcc$(BINEXT)
 Q3RCC = $(OBJDIR)/q3rcc$(BINEXT)
 
+# disable builtin rules for bison, this is manually built and committed
+%.c: %.y
+
 $(Q3ASM_OBJ): CFLAGS+=-I$(CURDIR)/$(SRCDIR)/tools/lcc/src
 $(Q3LCC_OBJ): CFLAGS+=-DTEMPDIR=\"/tmp\"
 

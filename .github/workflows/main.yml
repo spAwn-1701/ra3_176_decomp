@@ -16,25 +16,20 @@ jobs:
       - name: Compile RA3 Game DLL
         shell: msys2 {0}
         run: |
-          # 1. Navigate to the code root
           cd ra3-sdk/code
           
-          # 2. "Refactor" the math file on the fly to disable the broken assembly
-          # This replaces '__asm' with 'if(0)' so the compiler ignores the block
-          sed -i 's/__asm/if(0)/g' game/q_math.c
+          # Forcefully remove the broken assembly blocks that are causing the 'push ebx' errors
+          # This replaces the specific assembly block in q_math.c with a comment
+          sed -i '/__asm/,/}/d' game/q_math.c
           
-          # 3. Compile with explicit paths
-          gcc -shared -o qagamex86.dll \
-          game/ai_chat.c game/ai_cmd.c game/ai_dmnet.c game/ai_dmq3.c game/ai_main.c \
-          game/ai_team.c game/arena.c game/arenacfg.c game/arena_common.c game/bg_lib.c \
-          game/bg_misc.c game/bg_pmove.c game/bg_slidemove.c game/g_active.c game/g_arenas.c \
-          game/g_bot.c game/g_captain.c game/g_client.c game/g_cmds.c game/g_combat.c \
-          game/g_db.c game/g_httpd.c game/g_items.c game/g_main.c game/g_mem.c \
-          game/g_misc.c game/g_missile.c game/g_mover.c game/g_session.c game/g_spawn.c \
-          game/g_stats.c game/g_svcmds.c game/g_syscalls.c game/g_target.c game/g_team.c \
-          game/g_thread.c game/g_trigger.c game/g_unlagged.c game/g_utils.c game/g_weapon.c \
-          game/q_math.c qcommon/q_shared.c \
-          -I./game -I./qcommon -I./sqlite -I./httpd \
+          # Create a temporary build folder and put EVERYTHING in it to avoid path errors
+          mkdir -p build_dir
+          cp game/*.c qcommon/*.c build_dir/
+          cp game/*.h qcommon/*.h build_dir/
+          cd build_dir
+
+          # Compile from the single flat folder
+          gcc -shared -o qagamex86.dll *.c \
           -m32 -O2 -DWIN32 -DQ3_VM=0 -DMAX_FILEPATH=144 \
           -fpermissive -fcommon -fwrapv -w \
           -D_OFF_T_DEFINED -D_off_t=long -Doff_t=long \
@@ -44,4 +39,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ra3-windows-dll
-          path: ra3-sdk/code/qagamex86.dll
+          path: ra3-sdk/code/build_dir/qagamex86.dll

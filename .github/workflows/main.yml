@@ -16,19 +16,24 @@ jobs:
       - name: Compile RA3 Game DLL
         shell: msys2 {0}
         run: |
+          # Go to the SDK root
           cd ra3-sdk/code
           
-          # Forcefully remove the broken assembly blocks that are causing the 'push ebx' errors
-          # This replaces the specific assembly block in q_math.c with a comment
-          sed -i '/__asm/,/}/d' game/q_math.c
-          
-          # Create a temporary build folder and put EVERYTHING in it to avoid path errors
+          # 1. Create a flat build directory
           mkdir -p build_dir
-          cp game/*.c qcommon/*.c build_dir/
-          cp game/*.h qcommon/*.h build_dir/
+          
+          # 2. SEARCH and RESCUE: Find all source files and copy them into build_dir
+          # This solves the 'No such file or directory' error for good
+          find . -name "*.c" -exec cp {} build_dir/ \;
+          find . -name "*.h" -exec cp {} build_dir/ \;
+          
           cd build_dir
-
-          # Compile from the single flat folder
+          
+          # 3. Perform the surgery on q_math.c to remove the old assembly
+          sed -i '/__asm/,/}/d' q_math.c
+          
+          # 4. Compile everything in the flat folder
+          # We remove g_db.c and g_httpd.c from this list if they cause errors later
           gcc -shared -o qagamex86.dll *.c \
           -m32 -O2 -DWIN32 -DQ3_VM=0 -DMAX_FILEPATH=144 \
           -fpermissive -fcommon -fwrapv -w \

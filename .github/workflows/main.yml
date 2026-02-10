@@ -16,32 +16,30 @@ jobs:
       - name: Compile RA3 Game DLL
         shell: msys2 {0}
         run: |
-          # Go to the SDK root
           cd ra3-sdk/code
           
-          # 1. Create a flat build directory
-          mkdir -p build_dir
+          # Create a clean folder for ONLY the game files
+          mkdir -p game_only
           
-          # 2. SEARCH and RESCUE: Find all source files and copy them into build_dir
-          # This solves the 'No such file or directory' error for good
-          find . -name "*.c" -exec cp {} build_dir/ \;
-          find . -name "*.h" -exec cp {} build_dir/ \;
+          # Only copy the essential game and common files
+          cp game/*.c game/*.h game_only/
+          cp qcommon/*.c qcommon/*.h game_only/
           
-          cd build_dir
+          cd game_only
           
-          # 3. Perform the surgery on q_math.c to remove the old assembly
+          # Perform the 'surgery' on the math file
           sed -i '/__asm/,/}/d' q_math.c
           
-          # 4. Compile everything in the flat folder
-          # We remove g_db.c and g_httpd.c from this list if they cause errors later
+          # Compile ONLY the game files, skipping the broken HTTP/LCC tools
+          # We also add a fix for that '_off64_t' error you saw
           gcc -shared -o qagamex86.dll *.c \
           -m32 -O2 -DWIN32 -DQ3_VM=0 -DMAX_FILEPATH=144 \
           -fpermissive -fcommon -fwrapv -w \
-          -D_OFF_T_DEFINED -D_off_t=long -Doff_t=long \
+          -D_off64_t=long -D_OFF64_T_DEFINED \
           -Did386=0 -DQAGAME
           
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ra3-windows-dll
-          path: ra3-sdk/code/build_dir/qagamex86.dll
+          path: ra3-sdk/code/game_only/qagamex86.dll

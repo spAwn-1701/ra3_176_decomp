@@ -16,21 +16,18 @@ jobs:
       - name: Compile RA3 Game DLL
         shell: msys2 {0}
         run: |
-          # Find the code directory dynamically
-          CODE_PATH=$(find . -name q_shared.c -exec dirname {} + | grep "qcommon" | sed 's/\/qcommon//g' | head -n 1)
-          echo "Found code at: $CODE_PATH"
-          cd "$CODE_PATH"
-
+          cd ra3-sdk/code
+          # We compile only the game files and q_shared to avoid the broken sqlite/httpd parts
           gcc -shared -o qagamex86.dll \
           game/*.c qcommon/q_shared.c \
           -I./game -I./qcommon -I./sqlite -I./httpd \
           -m32 -O2 -DWIN32 -DQ3_VM=0 -DMAX_FILEPATH=144 \
           -fpermissive -fcommon -fwrapv -w \
           -D_OFF_T_DEFINED -D_off_t=long -Doff_t=long \
-          -Dref_soft -Did386=0
+          -Did386=0 -DQAGAME
           
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ra3-windows-dll
-          path: "**/qagamex86.dll"
+          path: ra3-sdk/code/qagamex86.dll

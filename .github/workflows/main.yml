@@ -7,18 +7,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up MinGW
-        uses: egor-tensin/setup-mingw@v2
+      - name: Install MinGW
+        uses: msys2/setup-msys2@v2
         with:
-          platform: x64
+          msystem: MINGW64
+          install: mingw-w64-x86_64-gcc
 
       - name: Compile RA3 Game DLL
+        shell: msys2 {0}
         run: |
           cd ra3-sdk/code
-          gcc -shared -o qagamex86_64.dll `
-          game/*.c sqlite/*.c httpd/*.c qcommon/q_shared.c `
-          -I./game -I./qcommon -I./sqlite -I./httpd `
-          -m64 -O2 -DWIN32 -DQ3_VM=0 -DMAX_FILEPATH=144 -DSQLITE_THREADSAFE=0 `
+          gcc -shared -o qagamex86_64.dll \
+          game/*.c sqlite/*.c httpd/*.c qcommon/q_shared.c \
+          -I./game -I./qcommon -I./sqlite -I./httpd \
+          -m64 -O2 -DWIN32 -DQ3_VM=0 -DMAX_FILEPATH=144 -DSQLITE_THREADSAFE=0 \
           -fpermissive -fcommon -fwrapv -w
 
       - name: Upload Artifact
